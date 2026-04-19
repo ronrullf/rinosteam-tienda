@@ -38,6 +38,11 @@ export interface Game {
 
 export type Country = 'Chile' | 'Venezuela'
 
+export interface CartItem {
+  game: Game
+  discounted: boolean   // 20% off via upsell
+}
+
 export interface GameFormData {
   title: string
   description: string

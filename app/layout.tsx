@@ -10,10 +10,15 @@ export const metadata: Metadata = {
   description:
     'Tienda de cuentas Steam con descuentos de hasta 90%. Accedes primero, pagas después. Chile y Venezuela.',
   keywords: ['steam', 'juegos', 'descuentos', 'cuentas steam', 'rinosteam'],
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+  },
   openGraph: {
     title: 'RinoSteam — Juegos hasta 90% más baratos',
     description: 'Accedes primero, pagas después. Sin riesgo de estafa.',
     type: 'website',
+    images: ['/logo.png'],
   },
 }
 

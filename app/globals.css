@@ -249,3 +249,46 @@ body {
   color: var(--text-muted);
   font-size: 13px;
 }
+
+/* Testimonials marquee */
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Fake purchase slide-in (bottom-left toast) */
+@keyframes slide-in-bottom {
+  from { transform: translateY(120%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes slide-out-bottom {
+  from { transform: translateY(0);    opacity: 1; }
+  to   { transform: translateY(120%); opacity: 0; }
+}
+.animate-slide-in-bottom  { animation: slide-in-bottom  0.45s cubic-bezier(.22,1,.36,1) forwards; }
+.animate-slide-out-bottom { animation: slide-out-bottom 0.35s ease-in forwards; }
+
+/* Viewer pulse dot */
+@keyframes viewer-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+.viewer-dot {
+  animation: viewer-blink 1.4s ease-in-out infinite;
+}
+
+/* Countdown flip */
+@keyframes countdown-pop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.countdown-pop {
+  animation: countdown-pop 0.3s ease-out;
+}

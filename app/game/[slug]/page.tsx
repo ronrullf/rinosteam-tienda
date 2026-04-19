@@ -2,11 +2,14 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { formatPrice } from '@/lib/utils'
-import { CountryModal } from '@/components/store/CountryModal'
+import { BuyModal } from '@/components/store/BuyModal'
+import { TermsModal } from '@/components/store/TermsModal'
+import { CountryPickerModal } from '@/components/store/CountryPickerModal'
 import { Header } from '@/components/store/Header'
 import { Footer } from '@/components/store/Footer'
 import { GameBuyButton } from '@/components/store/GameBuyButton'
 import { WhatsAppFAB } from '@/components/store/WhatsAppFAB'
+import { CartDrawer } from '@/components/store/CartDrawer'
 import type { Game } from '@/types'
 
 export const dynamic = 'force-dynamic'
@@ -169,7 +172,10 @@ export default async function GamePage({ params }: PageProps) {
       </div>
 
       <Footer />
-      <CountryModal />
+      <CountryPickerModal />
+      <BuyModal />
+      <TermsModal />
+      <CartDrawer />
       <WhatsAppFAB />
     </>
   )

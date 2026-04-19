@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { Game } from '@/types'
-import { formatPrice } from '@/lib/utils'
+import { formatPrice, formatPriceCLP } from '@/lib/utils'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { useStore } from '@/context/StoreContext'
@@ -15,128 +15,108 @@ interface GameCardProps {
 }
 
 export function GameCard({ game, index, featured = false }: GameCardProps) {
-  const { setSelectedGame, setCountryModalOpen } = useStore()
+  const { setSelectedGame, setBuyModalOpen, addToCart, cartItems, country } = useStore()
 
   const discount = game.discount_pct ?? 0
+  const inCart = cartItems.some(i => i.game.id === game.id)
+
+  const saleDisplay = country === 'CL' ? formatPriceCLP(game.sale_price) : formatPrice(game.sale_price)
+  const origDisplay = country === 'CL' ? formatPriceCLP(game.original_price) : formatPrice(game.original_price)
+  const savings = (game.original_price - game.sale_price).toFixed(2)
+  const savingsDisplay = country === 'CL'
+    ? `$${Math.round((game.original_price - game.sale_price) * 900).toLocaleString('es-CL')} CLP`
+    : `$${savings}`
 
   function handleBuy() {
     setSelectedGame(game)
-    setCountryModalOpen(true)
+    setBuyModalOpen(true)
+  }
+
+  function handleAddToCart(e: React.MouseEvent) {
+    e.stopPropagation()
+    addToCart(game, false)
   }
 
   return (
     <motion.article
       className={`game-card rounded-card overflow-hidden border flex flex-col h-full${featured ? ' md:col-span-2' : ''}`}
-      style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderColor: 'var(--border)',
-      }}
+      style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)' }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.06, 0.5), duration: 0.35 }}
       layout
     >
-      {/* Imagen */}
-      <div
-        className="relative w-full overflow-hidden flex-shrink-0"
-        style={{ aspectRatio: featured ? '16/9' : '3/4' }}
-      >
-        <Image
-          src={game.image_url}
-          alt={game.title}
-          fill
+      {/* Image */}
+      <div className="relative w-full overflow-hidden flex-shrink-0"
+        style={{ aspectRatio: featured ? '16/9' : '3/4' }}>
+        <Image src={game.image_url} alt={game.title} fill
           className="object-cover transition-transform duration-300 hover:scale-105"
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          priority={index < 6}
-        />
-
-        {/* Gradiente inferior */}
-        <div
-          className="absolute inset-x-0 bottom-0 h-1/2"
-          style={{
-            background: 'linear-gradient(to top, var(--bg-surface), transparent)',
-          }}
-        />
-
-        {/* Badges overlay */}
+          priority={index < 6} />
+        <div className="absolute inset-x-0 bottom-0 h-1/2"
+          style={{ background: 'linear-gradient(to top, var(--bg-surface), transparent)' }} />
         <div className="absolute top-2 inset-x-2 flex justify-between items-start">
-          {discount > 0 && (
-            <Badge variant="discount" shine className="shadow-lg">
-              -{discount}%
-            </Badge>
-          )}
-          {game.is_featured && (
-            <Badge variant="hot" className="shadow-lg ml-auto">
-              🔥 HOT
-            </Badge>
-          )}
+          {discount > 0 && <Badge variant="discount" shine className="shadow-lg">-{discount}%</Badge>}
+          {game.is_featured && <Badge variant="hot" className="shadow-lg ml-auto">🔥 HOT</Badge>}
         </div>
-
-        {/* Stock note */}
         {game.stock_note && (
           <div className="absolute bottom-2 left-2">
-            <Badge variant="stock" className="text-[10px]">
-              ⚠️ {game.stock_note}
-            </Badge>
+            <Badge variant="stock" className="text-[10px]">⚠️ {game.stock_note}</Badge>
           </div>
         )}
       </div>
 
       {/* Info */}
-      <div className="flex flex-col gap-1.5 p-3 md:p-4 flex-1">
-        <h3
-          className="font-heading leading-tight line-clamp-2"
-          style={{
-            fontSize: 'clamp(16px, 2vw, 20px)',
-            color: 'var(--text-primary)',
-          }}
-        >
+      <div className="flex flex-col gap-1 p-3 md:p-4 flex-1">
+        <h3 className="font-heading leading-tight line-clamp-2"
+          style={{ fontSize: 'clamp(15px, 2vw, 19px)', color: 'var(--text-primary)' }}>
           {game.title}
         </h3>
-
-        {/* Categoría */}
-        <span
-          className="font-sans text-[11px] uppercase tracking-wide"
-          style={{ color: 'var(--text-muted)' }}
-        >
+        <span className="font-sans text-[10px] uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
           {game.category}
         </span>
-
-        {/* Estrellas */}
         <div className="flex gap-0.5" aria-hidden>
           {[...Array(5)].map((_, i) => (
-            <span key={i} className="text-sm" style={{ color: 'var(--gold-light)' }}>
-              ★
-            </span>
+            <span key={i} className="text-xs" style={{ color: 'var(--gold-light)' }}>★</span>
           ))}
         </div>
 
-        {/* Precios */}
-        <div className="flex items-baseline gap-2 mt-auto pt-1">
-          <span className="price-original">{formatPrice(game.original_price)}</span>
-          <span
-            className="font-display"
-            style={{
-              fontSize: 'clamp(22px, 3vw, 28px)',
-              color: 'var(--gold)',
-              lineHeight: 1,
-            }}
-          >
-            {formatPrice(game.sale_price)}
+        {/* Anchor pricing */}
+        <div className="rounded-lg px-2 py-1.5 mt-1" style={{ backgroundColor: 'var(--bg-elevated)' }}>
+          <div className="flex items-center justify-between">
+            <span className="font-sans text-[10px]" style={{ color: 'var(--text-muted)' }}>En Steam:</span>
+            <span className="font-sans text-[11px] line-through" style={{ color: 'var(--text-muted)' }}>{origDisplay}</span>
+          </div>
+          <div className="flex items-center justify-between mt-0.5">
+            <span className="font-sans text-[10px] font-semibold" style={{ color: '#22C55E' }}>🎉 Ahorras:</span>
+            <span className="font-sans text-[11px] font-bold" style={{ color: '#22C55E' }}>{savingsDisplay}</span>
+          </div>
+        </div>
+
+        {/* Sale price */}
+        <div className="flex items-baseline gap-2 mt-1">
+          <span className="font-display" style={{ fontSize: 'clamp(20px, 3vw, 26px)', color: 'var(--gold)', lineHeight: 1 }}>
+            {saleDisplay}
           </span>
         </div>
 
-        {/* CTA */}
-        <Button
-          variant="primary"
-          fullWidth
-          pulse
-          onClick={handleBuy}
-          className="mt-2 font-heading tracking-wide uppercase"
-          style={{ fontSize: 'clamp(12px, 1.5vw, 14px)', letterSpacing: '0.05em' }}
-        >
-          COMPRAR AHORA →
-        </Button>
+        {/* Buttons */}
+        <div className="flex flex-col gap-1.5 mt-auto pt-2">
+          <Button variant="primary" fullWidth pulse onClick={handleBuy}
+            className="font-heading tracking-wide uppercase"
+            style={{ fontSize: 'clamp(11px, 1.5vw, 13px)', letterSpacing: '0.05em' }}>
+            COMPRAR AHORA →
+          </Button>
+          <button onClick={handleAddToCart}
+            className="w-full rounded-lg py-1.5 font-sans text-[12px] font-semibold transition-all active:scale-95 flex items-center justify-center gap-1"
+            style={{
+              backgroundColor: inCart ? 'rgba(34,197,94,0.15)' : 'var(--bg-elevated)',
+              color: inCart ? '#22C55E' : 'var(--text-secondary)',
+              border: `1px solid ${inCart ? 'rgba(34,197,94,0.4)' : 'var(--border)'}`,
+            }}>
+            {inCart ? '✅ En el carrito' : '🛒 Añadir al carrito'}
+          </button>
+        </div>
       </div>
     </motion.article>
   )

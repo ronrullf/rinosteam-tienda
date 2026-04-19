@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { CategoryFilter } from './CategoryFilter'
 import { GameGrid } from './GameGrid'
 import { useStore } from '@/context/StoreContext'
@@ -12,7 +12,12 @@ interface GameGridContainerProps {
 
 export function GameGridContainer({ initialGames }: GameGridContainerProps) {
   const [activeCategory, setActiveCategory] = useState('Todos')
-  const { searchQuery } = useStore()
+  const { searchQuery, setGamesList } = useStore()
+
+  // Register full games for cart upsell + fake purchase popups
+  useEffect(() => {
+    setGamesList(initialGames)
+  }, [initialGames, setGamesList])
 
   const filtered = useMemo(() => {
     let list = initialGames
