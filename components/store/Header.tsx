@@ -29,7 +29,7 @@ export function Header() {
     return () => clearTimeout(timerRef)
   }, [])
 
-  const WA_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? '584262301632'
+  const WA_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? '584262031630'
   const waConsultUrl = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent('Hola! Tengo una consulta sobre RinoSteam 👋')}`
 
   const countryLabel = country === 'CL' ? '🇨🇱 CLP' : country === 'VE' ? '🇻🇪 USD' : '🌍'
@@ -70,6 +70,19 @@ export function Header() {
               RINO<span style={{ color: 'var(--orange-500)' }}>STEAM</span>
             </span>
           </a>
+        )}
+
+        {/* PC/Steam badge */}
+        {!mobileSearchOpen && (
+          <div className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-full flex-shrink-0"
+            style={{ backgroundColor: 'rgba(30,120,200,0.12)', border: '1px solid rgba(30,120,200,0.25)' }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#63B3ED" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8m-4-4v4" />
+            </svg>
+            <span className="font-sans text-[10px] font-bold whitespace-nowrap" style={{ color: '#63B3ED' }}>
+              Solo PC · Steam
+            </span>
+          </div>
         )}
 
         {/* Desktop search */}

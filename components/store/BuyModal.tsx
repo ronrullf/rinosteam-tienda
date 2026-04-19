@@ -99,17 +99,16 @@ export function BuyModal() {
   const origPrice      = selectedGame?.original_price ?? 0
   const effectivePrice = discountApplied ? basePrice * (1 - discountApplied / 100) : basePrice
 
+  // Para VE: "$4.99 (3,348.34 Bs)" — Bs solo aquí en el modal de compra
   const saleDisplay = country === 'CL'
     ? formatPriceCLP(effectivePrice)
     : country === 'VE' && bsRate
-      ? formatPriceBS(effectivePrice, bsRate)
+      ? `${formatPrice(effectivePrice)} (${formatPriceBS(effectivePrice, bsRate)})`
       : formatPrice(effectivePrice)
 
   const origDisplay = country === 'CL'
     ? formatPriceCLP(origPrice)
-    : country === 'VE' && bsRate
-      ? formatPriceBS(origPrice, bsRate)
-      : formatPrice(origPrice)
+    : formatPrice(origPrice) // Siempre USD para VE en tachado
 
   // Para WA: "$X.XX (Y,YYY Bs)" o "$X.XX ($Y,YYY CLP)"
   const priceForWA = selectedGame ? formatPriceFull(effectivePrice, country, bsRate) : ''

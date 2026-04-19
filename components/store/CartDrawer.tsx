@@ -5,7 +5,14 @@ import Image from 'next/image'
 import { useStore } from '@/context/StoreContext'
 import { formatPrice, formatPriceCLP, formatPriceBS, buildCartWhatsAppUrl } from '@/lib/utils'
 
-function priceOf(amount: number, country: 'CL' | 'VE' | null, bsRate: number | null) {
+/** Precio de ítem/ahorro — VE siempre USD, CL en CLP */
+function priceOf(amount: number, country: 'CL' | 'VE' | null) {
+  if (country === 'CL') return formatPriceCLP(amount)
+  return formatPrice(amount)
+}
+
+/** Total final — VE en Bs, CL en CLP */
+function totalOf(amount: number, country: 'CL' | 'VE' | null, bsRate: number | null) {
   if (country === 'CL') return formatPriceCLP(amount)
   if (country === 'VE' && bsRate) return formatPriceBS(amount, bsRate)
   return formatPrice(amount)
@@ -29,9 +36,12 @@ export function CartDrawer() {
   const steamTotal = cartItems.reduce((s, i) => s + i.game.original_price, 0)
   const savings    = steamTotal - subtotal
 
-  const subtotalDisplay = priceOf(subtotal, country, bsRate)
-  const steamDisplay    = priceOf(steamTotal, country, bsRate)
-  const savingsDisplay  = priceOf(savings, country, bsRate)
+  // Items y ahorro siempre en USD (VE) / CLP (Chile)
+  const subtotalDisplay = priceOf(subtotal, country)
+  const steamDisplay    = priceOf(steamTotal, country)
+  const savingsDisplay  = priceOf(savings, country)
+  // Total en Bs para VE, CLP para Chile
+  const totalBsDisplay  = totalOf(subtotal, country, bsRate)
 
   const cartIds    = new Set(cartItems.map(i => i.game.id))
   const upsellGames = gamesList.filter(g => !cartIds.has(g.id)).slice(0, 3)
@@ -40,9 +50,10 @@ export function CartDrawer() {
     if (cartItems.length === 0) return
     const items = itemsWithPrice.map(i => ({
       title: i.game.title,
-      priceDisplay: priceOf(i.finalPrice, country, bsRate),
+      priceDisplay: priceOf(i.finalPrice, country),
     }))
-    const url = buildCartWhatsAppUrl(items, subtotalDisplay, buyerName)
+    // En el mensaje WA: total en Bs para VE, CLP para Chile
+    const url = buildCartWhatsAppUrl(items, totalBsDisplay, buyerName)
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
@@ -108,10 +119,10 @@ export function CartDrawer() {
                           )}
                           <div className="flex items-center gap-2 mt-1">
                             <span className="font-sans text-[11px] line-through" style={{ color: 'var(--text-muted)' }}>
-                              {priceOf(item.game.sale_price, country, bsRate)}
+                              {priceOf(item.game.sale_price, country)}
                             </span>
                             <span className="font-heading text-lg" style={{ color: 'var(--gold)' }}>
-                              {priceOf(item.finalPrice, country, bsRate)}
+                              {priceOf(item.finalPrice, country)}
                             </span>
                           </div>
                         </div>
@@ -139,9 +150,13 @@ export function CartDrawer() {
                       <span style={{ color: '#22C55E' }}>🎉 Ahorras:</span>
                       <span style={{ color: '#22C55E' }}>{savingsDisplay}</span>
                     </div>
-                    <div className="flex justify-between font-heading text-xl mt-1">
-                      <span style={{ color: 'var(--text-primary)' }}>Total:</span>
-                      <span style={{ color: 'var(--gold)' }}>{subtotalDisplay}</span>
+                    {/* Total: en Bs para VE, CLP para Chile */}
+                    <div className="flex justify-between font-heading text-xl mt-1 pt-1.5 border-t"
+                      style={{ borderColor: 'rgba(34,197,94,0.2)' }}>
+                      <span style={{ color: 'var(--text-primary)' }}>
+                        Total {country === 'VE' ? '(Bs)' : ''}:
+                      </span>
+                      <span style={{ color: 'var(--gold)' }}>{totalBsDisplay}</span>
                     </div>
                   </div>
 
@@ -182,10 +197,10 @@ export function CartDrawer() {
                                 </p>
                                 <div className="flex items-center gap-2">
                                   <span className="font-sans text-[11px] line-through" style={{ color: 'var(--text-muted)' }}>
-                                    {priceOf(g.sale_price, country, bsRate)}
+                                    {priceOf(g.sale_price, country)}
                                   </span>
                                   <span className="font-heading text-base" style={{ color: '#22C55E' }}>
-                                    {priceOf(discountedPrice, country, bsRate)}
+                                    {priceOf(discountedPrice, country)}
                                   </span>
                                   <span className="font-sans text-[10px] px-1 rounded font-bold"
                                     style={{ backgroundColor: 'rgba(34,197,94,0.2)', color: '#22C55E' }}>
@@ -213,8 +228,10 @@ export function CartDrawer() {
               <div className="flex-shrink-0 border-t p-4 flex flex-col gap-3"
                 style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-surface)' }}>
                 <div className="flex justify-between items-center">
-                  <span className="font-heading text-lg" style={{ color: 'var(--text-secondary)' }}>Total:</span>
-                  <span className="font-display text-2xl" style={{ color: 'var(--gold)' }}>{subtotalDisplay}</span>
+                  <span className="font-heading text-lg" style={{ color: 'var(--text-secondary)' }}>
+                    Total{country === 'VE' ? ' (Bs)' : ''}:
+                  </span>
+                  <span className="font-display text-2xl" style={{ color: 'var(--gold)' }}>{totalBsDisplay}</span>
                 </div>
                 <button onClick={handleCheckout}
                   className="w-full font-heading text-lg py-3.5 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2"

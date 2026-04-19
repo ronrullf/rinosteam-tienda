@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { Game } from '@/types'
-import { formatPrice, formatPriceCLP, formatPriceBS } from '@/lib/utils'
+import { formatPrice, formatPriceCLP } from '@/lib/utils'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { useStore } from '@/context/StoreContext'
@@ -25,31 +25,25 @@ function seedRandom(seed: string, min: number, max: number): number {
 }
 
 export function GameCard({ game, index, featured = false }: GameCardProps) {
-  const { setSelectedGame, setBuyModalOpen, addToCart, cartItems, country, bsRate } = useStore()
+  const { setSelectedGame, setBuyModalOpen, addToCart, cartItems, country } = useStore()
 
   const discount = game.discount_pct ?? 0
   const inCart = cartItems.some(i => i.game.id === game.id)
 
-  // Precio local según país
+  // Precio según país — VE siempre en USD (Bs solo en el modal de compra)
   const saleDisplay = country === 'CL'
     ? formatPriceCLP(game.sale_price)
-    : country === 'VE' && bsRate
-      ? formatPriceBS(game.sale_price, bsRate)
-      : formatPrice(game.sale_price)
+    : formatPrice(game.sale_price)
 
   const origDisplay = country === 'CL'
     ? formatPriceCLP(game.original_price)
-    : country === 'VE' && bsRate
-      ? formatPriceBS(game.original_price, bsRate)
-      : formatPrice(game.original_price)
+    : formatPrice(game.original_price)
 
-  // Ahorro
+  // Ahorro — siempre en USD para VE
   const savingsUSD = game.original_price - game.sale_price
   const savingsDisplay = country === 'CL'
     ? `$${Math.round(savingsUSD * 900).toLocaleString('es-CL')} CLP`
-    : country === 'VE' && bsRate
-      ? formatPriceBS(savingsUSD, bsRate)
-      : `$${savingsUSD.toFixed(2)}`
+    : `$${savingsUSD.toFixed(2)}`
 
   // FOMO estable por juego (seedeado del id)
   const viewers   = seedRandom(game.id, 2, 8)
