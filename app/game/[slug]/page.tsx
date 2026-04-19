@@ -6,6 +6,7 @@ import { CountryModal } from '@/components/store/CountryModal'
 import { Header } from '@/components/store/Header'
 import { Footer } from '@/components/store/Footer'
 import { GameBuyButton } from '@/components/store/GameBuyButton'
+import { WhatsAppFAB } from '@/components/store/WhatsAppFAB'
 import type { Game } from '@/types'
 
 export const dynamic = 'force-dynamic'
@@ -169,6 +170,7 @@ export default async function GamePage({ params }: PageProps) {
 
       <Footer />
       <CountryModal />
+      <WhatsAppFAB />
     </>
   )
 }

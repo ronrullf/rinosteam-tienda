@@ -184,6 +184,32 @@ body {
   }
 }
 
+/* ── WhatsApp FAB pulse ────────────────────────────────── */
+@keyframes wa-pulse {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  70%  { transform: scale(1.6); opacity: 0; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* ── Skeleton shimmer ──────────────────────────────────── */
+@keyframes skeleton-wave {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--bg-elevated)   0%,
+    var(--bg-surface)   40%,
+    rgba(249,115,22,0.06) 50%,
+    var(--bg-surface)   60%,
+    var(--bg-elevated) 100%
+  );
+  background-size: 800px 100%;
+  animation: skeleton-wave 1.6s ease-in-out infinite;
+}
+
 /* Grid de juegos — breakpoints explícitos como fallback */
 @media (min-width: 640px) {
   .games-grid { grid-template-columns: repeat(3, 1fr); }

@@ -1,51 +1,63 @@
-import { createClient } from '@/lib/supabase/server'
+import { Suspense } from 'react'
 import { Header } from '@/components/store/Header'
 import { HeroSection } from '@/components/store/HeroSection'
 import { TrustBanner } from '@/components/store/TrustBanner'
-import { GameGridContainer } from '@/components/store/GameGridContainer'
+import { CategoryFilter } from '@/components/store/CategoryFilter'
+import { GameGridServer } from '@/components/store/GameGridServer'
+import { GameGridSkeleton } from '@/components/store/GameGridSkeleton'
 import { CountryModal } from '@/components/store/CountryModal'
+import { WhatsAppFAB } from '@/components/store/WhatsAppFAB'
 import { Footer } from '@/components/store/Footer'
-import type { Game } from '@/types'
 
-// Siempre renderizar en servidor (usa cookies de Supabase SSR)
+// Force dynamic para Supabase SSR cookies
 export const dynamic = 'force-dynamic'
 
-async function getGames(): Promise<Game[]> {
-  try {
-    const supabase = await createClient()
-    const { data, error } = await supabase
-      .from('games')
-      .select('*')
-      .eq('is_active', true)
-      .order('is_featured', { ascending: false })
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      console.error('Error fetching games:', error.message)
-      return []
-    }
-
-    return data ?? []
-  } catch (err) {
-    // Supabase no configurado aún — devolver lista vacía
-    console.warn('Supabase not configured:', err)
-    return []
-  }
-}
-
-export default async function HomePage() {
-  const games = await getGames()
-
+export default function HomePage() {
   return (
     <>
       <Header />
+
       <main>
+        {/* Hero y trust banner se renderizan inmediatamente */}
         <HeroSection />
         <TrustBanner />
-        <GameGridContainer initialGames={games} />
+
+        {/* CategoryFilter necesita client state — viene del GameGridContainer */}
+        {/* El Suspense muestra el skeleton mientras los juegos cargan del servidor */}
+        <Suspense
+          fallback={
+            <>
+              {/* Skeleton del CategoryFilter */}
+              <div
+                className="sticky top-14 md:top-16 z-30 border-b"
+                style={{
+                  backgroundColor: 'var(--bg-surface)',
+                  borderColor: 'var(--border)',
+                }}
+              >
+                <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 md:py-3 flex gap-2">
+                  {['Todos', 'Acción', 'Terror', 'RPG', 'FPS'].map((l) => (
+                    <div
+                      key={l}
+                      className="skeleton-shimmer rounded-full flex-shrink-0"
+                      style={{ width: `${l.length * 9 + 24}px`, height: '32px' }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Skeleton del grid */}
+              <GameGridSkeleton count={10} />
+            </>
+          }
+        >
+          <GameGridServer />
+        </Suspense>
       </main>
+
       <Footer />
       <CountryModal />
+      <WhatsAppFAB />
     </>
   )
 }
