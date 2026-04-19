@@ -7,6 +7,8 @@ import { Header } from '@/components/store/Header'
 import { GameBuyButton } from '@/components/store/GameBuyButton'
 import type { Game } from '@/types'
 
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   params: Promise<{ slug: string }>
 }

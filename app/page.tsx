@@ -7,7 +7,8 @@ import { CountryModal } from '@/components/store/CountryModal'
 import { Footer } from '@/components/store/Footer'
 import type { Game } from '@/types'
 
-export const revalidate = 60 // ISR cada 60 segundos
+// Siempre renderizar en servidor (usa cookies de Supabase SSR)
+export const dynamic = 'force-dynamic'
 
 async function getGames(): Promise<Game[]> {
   try {
