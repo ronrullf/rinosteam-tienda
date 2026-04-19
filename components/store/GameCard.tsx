@@ -26,41 +26,35 @@ export function GameCard({ game, index, featured = false }: GameCardProps) {
 
   return (
     <motion.article
-      className="game-card rounded-card overflow-hidden border flex flex-col"
+      className={`game-card rounded-card overflow-hidden border flex flex-col h-full${featured ? ' md:col-span-2' : ''}`}
       style={{
         backgroundColor: 'var(--bg-surface)',
         borderColor: 'var(--border)',
-        gridColumn: featured ? 'span 2' : undefined,
       }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.07, duration: 0.35 }}
+      transition={{ delay: Math.min(index * 0.06, 0.5), duration: 0.35 }}
       layout
     >
       {/* Imagen */}
       <div
-        className="relative w-full overflow-hidden"
+        className="relative w-full overflow-hidden flex-shrink-0"
         style={{ aspectRatio: featured ? '16/9' : '3/4' }}
       >
         <Image
           src={game.image_url}
           alt={game.title}
           fill
-          className="object-cover"
-          sizes={
-            featured
-              ? '(max-width: 430px) 100vw, 430px'
-              : '(max-width: 430px) 50vw, 200px'
-          }
-          priority={index < 4}
+          className="object-cover transition-transform duration-300 hover:scale-105"
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          priority={index < 6}
         />
 
         {/* Gradiente inferior */}
         <div
-          className="absolute inset-x-0 bottom-0 h-1/3"
+          className="absolute inset-x-0 bottom-0 h-1/2"
           style={{
-            background:
-              'linear-gradient(to top, var(--bg-surface), transparent)',
+            background: 'linear-gradient(to top, var(--bg-surface), transparent)',
           }}
         />
 
@@ -78,7 +72,7 @@ export function GameCard({ game, index, featured = false }: GameCardProps) {
           )}
         </div>
 
-        {/* Stock urgency */}
+        {/* Stock note */}
         {game.stock_note && (
           <div className="absolute bottom-2 left-2">
             <Badge variant="stock" className="text-[10px]">
@@ -89,37 +83,41 @@ export function GameCard({ game, index, featured = false }: GameCardProps) {
       </div>
 
       {/* Info */}
-      <div className="flex flex-col gap-1.5 p-3 flex-1">
+      <div className="flex flex-col gap-1.5 p-3 md:p-4 flex-1">
         <h3
-          className="font-heading leading-tight"
+          className="font-heading leading-tight line-clamp-2"
           style={{
-            fontSize: featured ? '22px' : '18px',
+            fontSize: 'clamp(16px, 2vw, 20px)',
             color: 'var(--text-primary)',
           }}
         >
           {game.title}
         </h3>
 
-        {/* Estrellas decorativas */}
-        <div className="flex gap-0.5" aria-label="5 estrellas">
+        {/* Categoría */}
+        <span
+          className="font-sans text-[11px] uppercase tracking-wide"
+          style={{ color: 'var(--text-muted)' }}
+        >
+          {game.category}
+        </span>
+
+        {/* Estrellas */}
+        <div className="flex gap-0.5" aria-hidden>
           {[...Array(5)].map((_, i) => (
-            <span
-              key={i}
-              className="text-[13px]"
-              style={{ color: 'var(--gold-light)' }}
-            >
+            <span key={i} className="text-sm" style={{ color: 'var(--gold-light)' }}>
               ★
             </span>
           ))}
         </div>
 
         {/* Precios */}
-        <div className="flex items-baseline gap-2">
+        <div className="flex items-baseline gap-2 mt-auto pt-1">
           <span className="price-original">{formatPrice(game.original_price)}</span>
           <span
             className="font-display"
             style={{
-              fontSize: '26px',
+              fontSize: 'clamp(22px, 3vw, 28px)',
               color: 'var(--gold)',
               lineHeight: 1,
             }}
@@ -128,14 +126,14 @@ export function GameCard({ game, index, featured = false }: GameCardProps) {
           </span>
         </div>
 
-        {/* Botón CTA */}
+        {/* CTA */}
         <Button
           variant="primary"
           fullWidth
           pulse
           onClick={handleBuy}
-          className="mt-auto text-[14px] font-heading tracking-wide uppercase"
-          style={{ letterSpacing: '0.05em' }}
+          className="mt-2 font-heading tracking-wide uppercase"
+          style={{ fontSize: 'clamp(12px, 1.5vw, 14px)', letterSpacing: '0.05em' }}
         >
           COMPRAR AHORA →
         </Button>

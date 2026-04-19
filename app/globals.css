@@ -58,6 +58,14 @@ body {
   overflow-x: hidden;
 }
 
+/* Contenedor de ancho máximo para toda la tienda */
+.store-container {
+  width: 100%;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 /* Scrollbar personalizado */
 ::-webkit-scrollbar {
   width: 4px;
@@ -174,6 +182,17 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Grid de juegos — breakpoints explícitos como fallback */
+@media (min-width: 640px) {
+  .games-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1024px) {
+  .games-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (min-width: 1280px) {
+  .games-grid { grid-template-columns: repeat(5, 1fr); }
 }
 
 /* Inputs admin */

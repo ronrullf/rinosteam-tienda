@@ -18,7 +18,6 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [authChecked, setAuthChecked] = useState(false)
 
-  // Verificar sesión
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -55,7 +54,7 @@ export default function AdminDashboard() {
 
   const TABS: { id: Tab; label: string }[] = [
     { id: 'games', label: `📋 Juegos (${games.length})` },
-    { id: 'add', label: '➕ Añadir' },
+    { id: 'add', label: '➕ Añadir juego' },
   ]
 
   return (
@@ -63,51 +62,47 @@ export default function AdminDashboard() {
       <AdminHeader />
 
       {/* Tabs */}
-      <div
-        className="flex border-b"
-        style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)' }}
-      >
-        {TABS.map((t) => {
-          const active = tab === t.id
-          return (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className="flex-1 py-3.5 font-sans text-[14px] font-medium transition-colors border-b-2"
-              style={{
-                borderColor: active ? 'var(--orange-500)' : 'transparent',
-                color: active ? 'var(--orange-500)' : 'var(--text-secondary)',
-                backgroundColor: active ? 'rgba(249,115,22,0.05)' : 'transparent',
-              }}
-            >
-              {t.label}
-            </button>
-          )
-        })}
+      <div className="border-b" style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 flex">
+          {TABS.map((t) => {
+            const active = tab === t.id
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className="py-3.5 px-4 sm:px-6 font-sans text-[14px] font-medium transition-colors border-b-2 whitespace-nowrap"
+                style={{
+                  borderColor: active ? 'var(--orange-500)' : 'transparent',
+                  color: active ? 'var(--orange-500)' : 'var(--text-secondary)',
+                  backgroundColor: active ? 'rgba(249,115,22,0.05)' : 'transparent',
+                }}
+              >
+                {t.label}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* Contenido */}
-      <div className="px-4 pt-5">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-6 pb-12">
         {tab === 'games' ? (
           loading ? (
-            <div className="flex justify-center py-12">
+            <div className="flex justify-center py-16">
               <LoadingSpinner size="lg" />
             </div>
           ) : (
-            <GameListAdmin
-              games={games}
-              onRefresh={() => {
-                loadGames()
-              }}
-            />
+            <GameListAdmin games={games} onRefresh={loadGames} />
           )
         ) : (
-          <GameForm
-            onSuccess={() => {
-              loadGames()
-              setTab('games')
-            }}
-          />
+          <div className="max-w-xl">
+            <GameForm
+              onSuccess={() => {
+                loadGames()
+                setTab('games')
+              }}
+            />
+          </div>
         )}
       </div>
     </div>

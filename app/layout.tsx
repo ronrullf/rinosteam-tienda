@@ -3,6 +3,9 @@ import './globals.css'
 import { StoreProvider } from '@/context/StoreContext'
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? 'https://rinosteam.com'
+  ),
   title: 'RinoSteam — Juegos Steam hasta 90% más baratos',
   description:
     'Tienda de cuentas Steam con descuentos de hasta 90%. Accedes primero, pagas después. Chile y Venezuela.',
@@ -17,8 +20,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  themeColor: '#08040200',
+  themeColor: '#080402',
 }
 
 export default function RootLayout({
@@ -30,9 +32,7 @@ export default function RootLayout({
     <html lang="es">
       <body>
         <StoreProvider>
-          <div className="mx-auto max-w-mobile min-h-screen relative">
-            {children}
-          </div>
+          {children}
         </StoreProvider>
       </body>
     </html>

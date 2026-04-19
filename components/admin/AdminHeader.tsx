@@ -16,29 +16,29 @@ export function AdminHeader() {
 
   return (
     <header
-      className="sticky top-0 z-40 flex items-center justify-between px-4 h-14 border-b"
+      className="sticky top-0 z-40 border-b"
       style={{
         backgroundColor: 'rgba(19,10,4,0.95)',
         backdropFilter: 'blur(8px)',
         borderColor: 'var(--border)',
       }}
     >
-      <span
-        className="font-display text-xl"
-        style={{ color: 'var(--text-primary)' }}
-      >
-        🦏 RINO<span style={{ color: 'var(--orange-500)' }}>STEAM</span>{' '}
-        <span
-          className="font-sans font-normal text-sm ml-1"
-          style={{ color: 'var(--text-muted)' }}
-        >
-          Admin
-        </span>
-      </span>
-
-      <Button variant="ghost" size="sm" onClick={handleLogout}>
-        Cerrar sesión
-      </Button>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 md:h-16 flex items-center justify-between">
+        <a href="/" className="flex items-center gap-2">
+          <span className="font-display text-xl md:text-2xl" style={{ color: 'var(--text-primary)' }}>
+            🦏 RINO<span style={{ color: 'var(--orange-500)' }}>STEAM</span>
+          </span>
+          <span
+            className="font-sans font-normal text-sm hidden sm:inline"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            · Admin
+          </span>
+        </a>
+        <Button variant="ghost" size="sm" onClick={handleLogout}>
+          Cerrar sesión
+        </Button>
+      </div>
     </header>
   )
 }

@@ -8,10 +8,7 @@ export default function Loading() {
     >
       <div className="flex flex-col items-center gap-4">
         <LoadingSpinner size="lg" />
-        <p
-          className="font-heading text-xl"
-          style={{ color: 'var(--orange-400)' }}
-        >
+        <p className="font-heading text-xl md:text-2xl animate-pulse" style={{ color: 'var(--orange-400)' }}>
           CARGANDO TIENDA...
         </p>
       </div>

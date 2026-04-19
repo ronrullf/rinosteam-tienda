@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { formatPrice } from '@/lib/utils'
 import { CountryModal } from '@/components/store/CountryModal'
 import { Header } from '@/components/store/Header'
+import { Footer } from '@/components/store/Footer'
 import { GameBuyButton } from '@/components/store/GameBuyButton'
 import type { Game } from '@/types'
 
@@ -46,120 +47,127 @@ export default async function GamePage({ params }: PageProps) {
   return (
     <>
       <Header />
-      <main>
-        {/* Imagen hero */}
-        <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
-          <Image
-            src={game.image_url}
-            alt={game.title}
-            fill
-            className="object-cover"
-            sizes="430px"
-            priority
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                'linear-gradient(to top, var(--bg-base) 0%, transparent 60%)',
-            }}
-          />
-          {discount > 0 && (
-            <span
-              className="absolute top-3 left-3 font-sans font-bold text-white text-sm px-2 py-1 rounded-lg animate-shine"
-            >
-              -{discount}% MÁS BARATO
-            </span>
-          )}
-        </div>
 
-        <div className="px-4 pt-4 pb-24 flex flex-col gap-4">
-          {/* Título */}
-          <h1
-            className="font-heading text-4xl leading-tight"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            {game.title}
-          </h1>
+      <main className="pb-28">
+        {/* ── HERO + CONTENIDO: layout en fila en desktop ── */}
+        <div className="max-w-5xl mx-auto px-0 md:px-6 lg:px-8 md:py-8">
+          <div className="md:grid md:grid-cols-2 md:gap-10 lg:gap-16 md:items-start">
 
-          {/* Estrellas */}
-          <div className="flex gap-1">
-            {[...Array(5)].map((_, i) => (
-              <span key={i} className="text-lg" style={{ color: 'var(--gold-light)' }}>
-                ★
-              </span>
-            ))}
-          </div>
+            {/* Imagen */}
+            <div className="relative w-full md:rounded-2xl md:overflow-hidden sticky md:top-24">
+              <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
+                <Image
+                  src={game.image_url}
+                  alt={game.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  priority
+                />
+                {/* Gradiente solo en mobile */}
+                <div
+                  className="absolute inset-0 md:hidden"
+                  style={{ background: 'linear-gradient(to top, var(--bg-base) 0%, transparent 60%)' }}
+                />
+                {discount > 0 && (
+                  <span className="absolute top-3 left-3 animate-shine font-sans font-bold text-white text-sm px-3 py-1.5 rounded-lg">
+                    -{discount}% MÁS BARATO
+                  </span>
+                )}
+              </div>
+            </div>
 
-          {/* Precios */}
-          <div className="flex items-baseline gap-3">
-            <span className="price-original text-base">
-              {formatPrice(game.original_price)}
-            </span>
-            <span
-              className="font-display text-5xl"
-              style={{ color: 'var(--gold)', lineHeight: 1 }}
-            >
-              {formatPrice(game.sale_price)}
-            </span>
-          </div>
+            {/* Info */}
+            <div className="px-4 md:px-0 pt-4 md:pt-0 flex flex-col gap-5">
 
-          {/* Descripción */}
-          {game.description && (
-            <p
-              className="font-sans text-[15px] leading-relaxed"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              {game.description}
-            </p>
-          )}
-
-          {/* Trust bullets */}
-          <div
-            className="rounded-xl border p-4 flex flex-col gap-2 mt-2"
-            style={{
-              backgroundColor: 'var(--bg-elevated)',
-              borderColor: 'var(--border)',
-            }}
-          >
-            <p
-              className="font-heading text-lg mb-1"
-              style={{ color: 'var(--orange-400)' }}
-            >
-              ¿Por qué RinoSteam?
-            </p>
-            {[
-              '✅ Accedes primero, pagas después',
-              '⚡ Entrega en minutos por WhatsApp',
-              '🛡 Sin riesgo de estafa garantizado',
-            ].map((item) => (
-              <p
-                key={item}
-                className="font-sans text-[14px]"
-                style={{ color: 'var(--text-secondary)' }}
+              {/* Categoría */}
+              <span
+                className="font-sans text-[12px] uppercase tracking-widest font-semibold"
+                style={{ color: 'var(--orange-400)' }}
               >
-                {item}
-              </p>
-            ))}
-          </div>
-        </div>
+                {game.category}
+              </span>
 
-        {/* CTA sticky bottom */}
-        <div
-          className="fixed bottom-0 inset-x-0 z-30 px-4 py-3 border-t safe-bottom mx-auto"
-          style={{
-            maxWidth: '430px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            backgroundColor: 'rgba(13,7,3,0.95)',
-            backdropFilter: 'blur(8px)',
-            borderColor: 'var(--border)',
-          }}
-        >
-          <GameBuyButton game={game} />
+              {/* Título */}
+              <h1
+                className="font-heading leading-tight"
+                style={{
+                  fontSize: 'clamp(28px, 5vw, 48px)',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                {game.title}
+              </h1>
+
+              {/* Estrellas */}
+              <div className="flex gap-1" aria-label="5 estrellas">
+                {[...Array(5)].map((_, i) => (
+                  <span key={i} className="text-xl" style={{ color: 'var(--gold-light)' }}>★</span>
+                ))}
+              </div>
+
+              {/* Precios */}
+              <div className="flex items-baseline gap-3">
+                <span className="price-original text-base">{formatPrice(game.original_price)}</span>
+                <span
+                  className="font-display"
+                  style={{ fontSize: 'clamp(36px, 6vw, 56px)', color: 'var(--gold)', lineHeight: 1 }}
+                >
+                  {formatPrice(game.sale_price)}
+                </span>
+              </div>
+
+              {/* Descripción */}
+              {game.description && (
+                <p
+                  className="font-sans text-[15px] md:text-base leading-relaxed"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  {game.description}
+                </p>
+              )}
+
+              {/* Trust bullets */}
+              <div
+                className="rounded-xl border p-4 flex flex-col gap-2"
+                style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border)' }}
+              >
+                <p className="font-heading text-lg" style={{ color: 'var(--orange-400)' }}>
+                  ¿Por qué RinoSteam?
+                </p>
+                {[
+                  '✅ Accedes primero, pagas después',
+                  '⚡ Entrega en minutos por WhatsApp',
+                  '🛡 Sin riesgo de estafa garantizado',
+                ].map((item) => (
+                  <p key={item} className="font-sans text-[14px]" style={{ color: 'var(--text-secondary)' }}>
+                    {item}
+                  </p>
+                ))}
+              </div>
+
+              {/* CTA — inline en desktop, sticky en mobile */}
+              <div className="hidden md:block">
+                <GameBuyButton game={game} />
+              </div>
+            </div>
+          </div>
         </div>
       </main>
 
+      {/* CTA sticky — solo mobile */}
+      <div
+        className="fixed bottom-0 inset-x-0 z-30 px-4 py-3 border-t safe-bottom md:hidden"
+        style={{
+          backgroundColor: 'rgba(13,7,3,0.95)',
+          backdropFilter: 'blur(8px)',
+          borderColor: 'var(--border)',
+        }}
+      >
+        <GameBuyButton game={game} />
+      </div>
+
+      <Footer />
       <CountryModal />
     </>
   )

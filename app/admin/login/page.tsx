@@ -19,10 +19,7 @@ export default function AdminLoginPage() {
     setLoading(true)
 
     const supabase = createClient()
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
 
     if (authError) {
       setError('Credenciales incorrectas. Verifica tu email y contraseña.')
@@ -39,25 +36,23 @@ export default function AdminLoginPage() {
       className="min-h-screen flex items-center justify-center px-4"
       style={{ backgroundColor: 'var(--bg-base)' }}
     >
+      {/* Card: más ancha en desktop, compacta en mobile */}
       <div
-        className="w-full max-w-sm rounded-2xl border p-8"
-        style={{
-          backgroundColor: 'var(--bg-surface)',
-          borderColor: 'var(--border)',
-        }}
+        className="w-full max-w-sm sm:max-w-md rounded-2xl border p-8 sm:p-10"
+        style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)' }}
       >
         {/* Logo */}
-        <div className="flex flex-col items-center mb-8 gap-1">
-          <span className="text-4xl">🦏</span>
-          <h1
-            className="font-display text-3xl"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            RINO<span style={{ color: 'var(--orange-500)' }}>STEAM</span>{' '}
-            <span style={{ color: 'var(--text-secondary)', fontSize: '20px' }}>
-              Admin
-            </span>
+        <div className="flex flex-col items-center mb-8 gap-2">
+          <span className="text-5xl">🦏</span>
+          <h1 className="font-display text-3xl sm:text-4xl" style={{ color: 'var(--text-primary)' }}>
+            RINO<span style={{ color: 'var(--orange-500)' }}>STEAM</span>
           </h1>
+          <span
+            className="font-sans text-sm font-medium px-3 py-1 rounded-full border"
+            style={{ color: 'var(--text-secondary)', borderColor: 'var(--border)' }}
+          >
+            Panel de administración
+          </span>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -103,7 +98,7 @@ export default function AdminLoginPage() {
 
           {error && (
             <p
-              className="font-sans text-[13px] text-center py-2 px-3 rounded-lg"
+              className="font-sans text-[13px] text-center py-2.5 px-3 rounded-lg"
               style={{
                 color: 'var(--danger)',
                 backgroundColor: 'rgba(239,68,68,0.1)',
@@ -136,7 +131,7 @@ export default function AdminLoginPage() {
           className="text-center font-sans text-[12px] mt-6"
           style={{ color: 'var(--text-muted)' }}
         >
-          Solo acceso autorizado
+          Solo acceso autorizado · RinoSteam
         </p>
       </div>
     </div>
