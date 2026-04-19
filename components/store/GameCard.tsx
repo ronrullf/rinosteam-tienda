@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { Game } from '@/types'
-import { formatPrice, formatPriceCLP } from '@/lib/utils'
+import { formatPrice, formatPriceCLP, formatPriceBS } from '@/lib/utils'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { useStore } from '@/context/StoreContext'
@@ -14,18 +14,46 @@ interface GameCardProps {
   featured?: boolean
 }
 
+/** Número pseudo-aleatorio estable basado en seed (game.id) */
+function seedRandom(seed: string, min: number, max: number): number {
+  let hash = 0
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash) + seed.charCodeAt(i)
+    hash |= 0
+  }
+  return min + (Math.abs(hash) % (max - min + 1))
+}
+
 export function GameCard({ game, index, featured = false }: GameCardProps) {
-  const { setSelectedGame, setBuyModalOpen, addToCart, cartItems, country } = useStore()
+  const { setSelectedGame, setBuyModalOpen, addToCart, cartItems, country, bsRate } = useStore()
 
   const discount = game.discount_pct ?? 0
   const inCart = cartItems.some(i => i.game.id === game.id)
 
-  const saleDisplay = country === 'CL' ? formatPriceCLP(game.sale_price) : formatPrice(game.sale_price)
-  const origDisplay = country === 'CL' ? formatPriceCLP(game.original_price) : formatPrice(game.original_price)
-  const savings = (game.original_price - game.sale_price).toFixed(2)
+  // Precio local según país
+  const saleDisplay = country === 'CL'
+    ? formatPriceCLP(game.sale_price)
+    : country === 'VE' && bsRate
+      ? formatPriceBS(game.sale_price, bsRate)
+      : formatPrice(game.sale_price)
+
+  const origDisplay = country === 'CL'
+    ? formatPriceCLP(game.original_price)
+    : country === 'VE' && bsRate
+      ? formatPriceBS(game.original_price, bsRate)
+      : formatPrice(game.original_price)
+
+  // Ahorro
+  const savingsUSD = game.original_price - game.sale_price
   const savingsDisplay = country === 'CL'
-    ? `$${Math.round((game.original_price - game.sale_price) * 900).toLocaleString('es-CL')} CLP`
-    : `$${savings}`
+    ? `$${Math.round(savingsUSD * 900).toLocaleString('es-CL')} CLP`
+    : country === 'VE' && bsRate
+      ? formatPriceBS(savingsUSD, bsRate)
+      : `$${savingsUSD.toFixed(2)}`
+
+  // FOMO estable por juego (seedeado del id)
+  const viewers   = seedRandom(game.id, 2, 8)
+  const stockLeft = seedRandom(game.id + '_stock', 3, 9)
 
   function handleBuy() {
     setSelectedGame(game)
@@ -55,15 +83,22 @@ export function GameCard({ game, index, featured = false }: GameCardProps) {
           priority={index < 6} />
         <div className="absolute inset-x-0 bottom-0 h-1/2"
           style={{ background: 'linear-gradient(to top, var(--bg-surface), transparent)' }} />
+
+        {/* Badges top */}
         <div className="absolute top-2 inset-x-2 flex justify-between items-start">
           {discount > 0 && <Badge variant="discount" shine className="shadow-lg">-{discount}%</Badge>}
           {game.is_featured && <Badge variant="hot" className="shadow-lg ml-auto">🔥 HOT</Badge>}
         </div>
-        {game.stock_note && (
-          <div className="absolute bottom-2 left-2">
-            <Badge variant="stock" className="text-[10px]">⚠️ {game.stock_note}</Badge>
+
+        {/* FOMO badge — viewers + cuentas disponibles */}
+        <div className="absolute bottom-2 left-2">
+          <div className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-sans text-[10px] font-semibold"
+            style={{ backgroundColor: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(4px)', color: '#fff' }}>
+            <span style={{ color: '#4ADE80' }}>👁 {viewers} viendo</span>
+            <span style={{ color: 'rgba(255,255,255,0.3)' }}>·</span>
+            <span style={{ color: '#FBBF24' }}>📦 {stockLeft} cuentas</span>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Info */}
@@ -82,20 +117,20 @@ export function GameCard({ game, index, featured = false }: GameCardProps) {
         </div>
 
         {/* Anchor pricing */}
-        <div className="rounded-lg px-2 py-1.5 mt-1" style={{ backgroundColor: 'var(--bg-elevated)' }}>
+        <div className="rounded-lg px-2 py-2 mt-1" style={{ backgroundColor: 'var(--bg-elevated)' }}>
           <div className="flex items-center justify-between">
             <span className="font-sans text-[10px]" style={{ color: 'var(--text-muted)' }}>En Steam:</span>
-            <span className="font-sans text-[11px] line-through" style={{ color: 'var(--text-muted)' }}>{origDisplay}</span>
+            <span className="font-sans text-[12px] line-through" style={{ color: 'var(--text-muted)' }}>{origDisplay}</span>
           </div>
-          <div className="flex items-center justify-between mt-0.5">
-            <span className="font-sans text-[10px] font-semibold" style={{ color: '#22C55E' }}>🎉 Ahorras:</span>
-            <span className="font-sans text-[11px] font-bold" style={{ color: '#22C55E' }}>{savingsDisplay}</span>
+          <div className="flex items-center justify-between mt-1">
+            <span className="font-sans text-[11px] font-bold" style={{ color: '#22C55E' }}>🎉 Ahorras:</span>
+            <span className="font-heading text-[18px] font-bold" style={{ color: '#22C55E' }}>{savingsDisplay}</span>
           </div>
         </div>
 
-        {/* Sale price */}
-        <div className="flex items-baseline gap-2 mt-1">
-          <span className="font-display" style={{ fontSize: 'clamp(20px, 3vw, 26px)', color: 'var(--gold)', lineHeight: 1 }}>
+        {/* Sale price — MÁS GRANDE */}
+        <div className="flex items-baseline gap-2 mt-2">
+          <span className="font-display" style={{ fontSize: 'clamp(28px, 4.5vw, 38px)', color: 'var(--gold)', lineHeight: 1 }}>
             {saleDisplay}
           </span>
         </div>

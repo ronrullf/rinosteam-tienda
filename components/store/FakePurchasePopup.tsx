@@ -10,6 +10,8 @@ const FAKE_USERS = [
   'nicolas_cl', 'kevin2024', 'cristian_g', 'pablo_ve', 'jorge_cl',
 ]
 
+type Action = 'comprar' | 'carrito'
+
 function randomBetween(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
@@ -17,7 +19,7 @@ function randomBetween(min: number, max: number) {
 export function FakePurchasePopup() {
   const { gamesList } = useStore()
   const [visible, setVisible] = useState(false)
-  const [current, setCurrent] = useState<{ user: string; game: string } | null>(null)
+  const [current, setCurrent] = useState<{ user: string; game: string; action: Action } | null>(null)
   const [exiting, setExiting] = useState(false)
 
   useEffect(() => {
@@ -29,7 +31,8 @@ export function FakePurchasePopup() {
     function showNext() {
       const user = FAKE_USERS[randomBetween(0, FAKE_USERS.length - 1)]
       const game = gamesList[randomBetween(0, gamesList.length - 1)]
-      setCurrent({ user, game: game.title })
+      const action: Action = Math.random() > 0.45 ? 'comprar' : 'carrito'
+      setCurrent({ user, game: game.title, action })
       setExiting(false)
       setVisible(true)
 
@@ -38,7 +41,6 @@ export function FakePurchasePopup() {
         setTimeout(() => setVisible(false), 400)
       }, 4000)
 
-      // 10-18 seconds between popups
       showTimer = setTimeout(showNext, randomBetween(10000, 18000))
     }
 
@@ -52,9 +54,11 @@ export function FakePurchasePopup() {
 
   if (!visible || !current) return null
 
+  const isCart = current.action === 'carrito'
+
   return (
     <div
-      className="fixed bottom-20 left-4 z-30 max-w-[280px]"
+      className="fixed bottom-20 left-4 z-30 max-w-[290px]"
       style={{
         animation: exiting
           ? 'slide-out-bottom 0.35s ease-in forwards'
@@ -71,19 +75,20 @@ export function FakePurchasePopup() {
       >
         <div
           className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-lg"
-          style={{ backgroundColor: 'rgba(249,115,22,0.15)' }}
+          style={{ backgroundColor: isCart ? 'rgba(34,197,94,0.15)' : 'rgba(249,115,22,0.15)' }}
         >
-          🎮
+          {isCart ? '🛒' : '🎮'}
         </div>
         <div className="min-w-0">
           <p className="font-sans text-[12px] font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
             {current.user}
           </p>
           <p className="font-sans text-[11px]" style={{ color: 'var(--text-secondary)' }}>
-            acaba de comprar <span style={{ color: 'var(--orange-400)' }}>{current.game}</span>
+            {isCart ? 'añadió al carrito' : 'acaba de comprar'}{' '}
+            <span style={{ color: 'var(--orange-400)' }}>{current.game}</span>
           </p>
           <p className="font-sans text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
-            hace unos segundos · ✅ verificado
+            hace unos segundos · {isCart ? '🛒 en carrito' : '✅ verificado'}
           </p>
         </div>
       </div>

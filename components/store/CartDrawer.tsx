@@ -3,10 +3,12 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import Image from 'next/image'
 import { useStore } from '@/context/StoreContext'
-import { formatPrice, formatPriceCLP, buildCartWhatsAppUrl } from '@/lib/utils'
+import { formatPrice, formatPriceCLP, formatPriceBS, buildCartWhatsAppUrl } from '@/lib/utils'
 
-function priceOf(amount: number, country: 'CL' | 'VE' | null) {
-  return country === 'CL' ? formatPriceCLP(amount) : formatPrice(amount)
+function priceOf(amount: number, country: 'CL' | 'VE' | null, bsRate: number | null) {
+  if (country === 'CL') return formatPriceCLP(amount)
+  if (country === 'VE' && bsRate) return formatPriceBS(amount, bsRate)
+  return formatPrice(amount)
 }
 
 export function CartDrawer() {
@@ -14,32 +16,31 @@ export function CartDrawer() {
     isCartOpen, setCartOpen,
     cartItems, removeFromCart, clearCart, addToCart,
     gamesList, country, buyerName,
-    setTermsOpen,
+    setTermsOpen, bsRate,
   } = useStore()
 
-  // Compute per-item final price (20% off if discounted)
   const itemsWithPrice = cartItems.map(item => {
-    const base = item.game.sale_price
+    const base  = item.game.sale_price
     const final = item.discounted ? base * 0.8 : base
     return { ...item, finalPrice: final }
   })
 
-  const subtotal = itemsWithPrice.reduce((s, i) => s + i.finalPrice, 0)
+  const subtotal   = itemsWithPrice.reduce((s, i) => s + i.finalPrice, 0)
   const steamTotal = cartItems.reduce((s, i) => s + i.game.original_price, 0)
-  const savings = steamTotal - subtotal
-  const subtotalDisplay = priceOf(subtotal, country)
-  const steamDisplay = priceOf(steamTotal, country)
-  const savingsDisplay = priceOf(savings, country)
+  const savings    = steamTotal - subtotal
 
-  // Games not yet in cart (for upsell)
-  const cartIds = new Set(cartItems.map(i => i.game.id))
+  const subtotalDisplay = priceOf(subtotal, country, bsRate)
+  const steamDisplay    = priceOf(steamTotal, country, bsRate)
+  const savingsDisplay  = priceOf(savings, country, bsRate)
+
+  const cartIds    = new Set(cartItems.map(i => i.game.id))
   const upsellGames = gamesList.filter(g => !cartIds.has(g.id)).slice(0, 3)
 
   function handleCheckout() {
     if (cartItems.length === 0) return
     const items = itemsWithPrice.map(i => ({
       title: i.game.title,
-      priceDisplay: priceOf(i.finalPrice, country),
+      priceDisplay: priceOf(i.finalPrice, country, bsRate),
     }))
     const url = buildCartWhatsAppUrl(items, subtotalDisplay, buyerName)
     window.open(url, '_blank', 'noopener,noreferrer')
@@ -49,7 +50,6 @@ export function CartDrawer() {
     <AnimatePresence>
       {isCartOpen && (
         <>
-          {/* Overlay */}
           <motion.div
             className="fixed inset-0 z-50"
             style={{ backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
@@ -57,7 +57,6 @@ export function CartDrawer() {
             onClick={() => setCartOpen(false)}
           />
 
-          {/* Drawer */}
           <motion.div
             className="fixed right-0 top-0 bottom-0 z-50 flex flex-col"
             style={{ width: 'min(380px, 100vw)', backgroundColor: 'var(--bg-surface)', borderLeft: '1px solid var(--border)' }}
@@ -69,9 +68,7 @@ export function CartDrawer() {
               style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-elevated)' }}>
               <div className="flex items-center gap-2">
                 <span className="text-xl">🛒</span>
-                <h2 className="font-heading text-xl" style={{ color: 'var(--text-primary)' }}>
-                  Mi Carrito
-                </h2>
+                <h2 className="font-heading text-xl" style={{ color: 'var(--text-primary)' }}>Mi Carrito</h2>
                 {cartItems.length > 0 && (
                   <span className="w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center"
                     style={{ backgroundColor: 'var(--orange-500)', color: '#fff' }}>
@@ -84,7 +81,6 @@ export function CartDrawer() {
 
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-
               {cartItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center flex-1 gap-3 py-16">
                   <span className="text-5xl">🛒</span>
@@ -95,8 +91,7 @@ export function CartDrawer() {
                   {/* Items */}
                   <div className="flex flex-col gap-3">
                     {itemsWithPrice.map((item) => (
-                      <div key={item.game.id}
-                        className="flex gap-3 rounded-xl border p-3"
+                      <div key={item.game.id} className="flex gap-3 rounded-xl border p-3"
                         style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border)' }}>
                         <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
                           <Image src={item.game.image_url} alt={item.game.title} fill className="object-cover" sizes="64px" />
@@ -113,10 +108,10 @@ export function CartDrawer() {
                           )}
                           <div className="flex items-center gap-2 mt-1">
                             <span className="font-sans text-[11px] line-through" style={{ color: 'var(--text-muted)' }}>
-                              {priceOf(item.game.sale_price, country)}
+                              {priceOf(item.game.sale_price, country, bsRate)}
                             </span>
                             <span className="font-heading text-lg" style={{ color: 'var(--gold)' }}>
-                              {priceOf(item.finalPrice, country)}
+                              {priceOf(item.finalPrice, country, bsRate)}
                             </span>
                           </div>
                         </div>
@@ -128,7 +123,7 @@ export function CartDrawer() {
                     ))}
                   </div>
 
-                  {/* Savings vs Steam */}
+                  {/* Resumen */}
                   <div className="rounded-xl p-3 border"
                     style={{ backgroundColor: 'rgba(34,197,94,0.05)', borderColor: 'rgba(34,197,94,0.25)' }}>
                     <div className="flex justify-between font-sans text-[13px]">
@@ -150,7 +145,7 @@ export function CartDrawer() {
                     </div>
                   </div>
 
-                  {/* Disclaimer 2+ games */}
+                  {/* Disclaimer 2+ */}
                   {cartItems.length >= 2 && (
                     <div className="rounded-xl p-3 border"
                       style={{ backgroundColor: 'rgba(249,115,22,0.06)', borderColor: 'var(--border-strong)' }}>
@@ -173,7 +168,7 @@ export function CartDrawer() {
                           Descuento exclusivo al comprar junto con otro juego
                         </p>
                       </div>
-                      <div className="flex flex-col gap-0 divide-y" style={{ borderColor: 'var(--border)' }}>
+                      <div className="flex flex-col divide-y" style={{ borderColor: 'var(--border)' }}>
                         {upsellGames.map(g => {
                           const discountedPrice = g.sale_price * 0.8
                           return (
@@ -187,10 +182,10 @@ export function CartDrawer() {
                                 </p>
                                 <div className="flex items-center gap-2">
                                   <span className="font-sans text-[11px] line-through" style={{ color: 'var(--text-muted)' }}>
-                                    {priceOf(g.sale_price, country)}
+                                    {priceOf(g.sale_price, country, bsRate)}
                                   </span>
                                   <span className="font-heading text-base" style={{ color: '#22C55E' }}>
-                                    {priceOf(discountedPrice, country)}
+                                    {priceOf(discountedPrice, country, bsRate)}
                                   </span>
                                   <span className="font-sans text-[10px] px-1 rounded font-bold"
                                     style={{ backgroundColor: 'rgba(34,197,94,0.2)', color: '#22C55E' }}>

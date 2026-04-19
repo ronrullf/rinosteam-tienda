@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useStore } from '@/context/StoreContext'
-import { buildWhatsAppUrl, formatPriceByCountry } from '@/lib/utils'
+import { buildWhatsAppUrl, formatPrice, formatPriceCLP, formatPriceBS, formatPriceFull } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
 import type { Country } from '@/types'
 
 const REVIEWS = [
@@ -14,8 +15,6 @@ const REVIEWS = [
   { user: '@pepito_plays',      stars: 5, text: 'Llevo más de 10 juegos comprados, nunca he tenido problemas. Los mejores!' },
 ]
 
-// Venezuela: Pago Móvil | Binance | PayPal (middle) | Zinli
-// Chile:     Transferencia | PayPal (middle)
 const PAYMENT_VE = [
   { icon: '📱', label: 'Pago Móvil' },
   { icon: '₿',  label: 'Binance' },
@@ -33,12 +32,19 @@ export function BuyModal() {
     selectedGame, setSelectedGame,
     country, setCountryPickerOpen,
     buyerName, setBuyerName,
-    setTermsOpen,
+    setTermsOpen, bsRate,
   } = useStore()
 
   const [termsAccepted, setTermsAccepted] = useState(true)
   const [nameError, setNameError] = useState(false)
   const [isDesktop, setIsDesktop] = useState(false)
+
+  // Código de descuento
+  const [codeInput, setCodeInput] = useState('')
+  const [discountApplied, setDiscountApplied] = useState<number | null>(null)
+  const [codeError, setCodeError] = useState('')
+  const [codeSuccess, setCodeSuccess] = useState('')
+  const [codeLoading, setCodeLoading] = useState(false)
 
   useEffect(() => {
     const check = () => setIsDesktop(window.innerWidth >= 768)
@@ -51,23 +57,74 @@ export function BuyModal() {
     setBuyModalOpen(false)
     setSelectedGame(null)
     setNameError(false)
+    setCodeInput('')
+    setDiscountApplied(null)
+    setCodeError('')
+    setCodeSuccess('')
   }
+
+  async function applyCode() {
+    const raw = codeInput.trim().toUpperCase()
+    if (!raw) return
+    setCodeLoading(true)
+    setCodeError('')
+    setCodeSuccess('')
+    try {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('discount_codes')
+        .select('*')
+        .eq('code', raw)
+        .single()
+
+      if (!data) {
+        setCodeError('Código no válido')
+        setDiscountApplied(null)
+      } else if (new Date(data.expires_at) < new Date()) {
+        setCodeError('Este código ha expirado')
+        setDiscountApplied(null)
+      } else {
+        setDiscountApplied(data.discount_pct)
+        setCodeSuccess(`✅ -${data.discount_pct}% aplicado correctamente`)
+      }
+    } catch {
+      setCodeError('Error al verificar el código')
+    } finally {
+      setCodeLoading(false)
+    }
+  }
+
+  // Precio efectivo (con descuento si aplica)
+  const basePrice      = selectedGame?.sale_price ?? 0
+  const origPrice      = selectedGame?.original_price ?? 0
+  const effectivePrice = discountApplied ? basePrice * (1 - discountApplied / 100) : basePrice
+
+  const saleDisplay = country === 'CL'
+    ? formatPriceCLP(effectivePrice)
+    : country === 'VE' && bsRate
+      ? formatPriceBS(effectivePrice, bsRate)
+      : formatPrice(effectivePrice)
+
+  const origDisplay = country === 'CL'
+    ? formatPriceCLP(origPrice)
+    : country === 'VE' && bsRate
+      ? formatPriceBS(origPrice, bsRate)
+      : formatPrice(origPrice)
+
+  // Para WA: "$X.XX (Y,YYY Bs)" o "$X.XX ($Y,YYY CLP)"
+  const priceForWA = selectedGame ? formatPriceFull(effectivePrice, country, bsRate) : ''
 
   function handleContinue() {
     if (!buyerName.trim()) { setNameError(true); return }
     if (!selectedGame) return
     const countryLabel: Country = country === 'CL' ? 'Chile' : 'Venezuela'
-    const priceDisplay = formatPriceByCountry(selectedGame.sale_price, country)
-    const url = buildWhatsAppUrl(selectedGame.title, countryLabel, buyerName, priceDisplay)
+    const url = buildWhatsAppUrl(selectedGame.title, countryLabel, buyerName, priceForWA)
     window.open(url, '_blank', 'noopener,noreferrer')
     handleClose()
   }
 
-  const saleDisplay = selectedGame ? formatPriceByCountry(selectedGame.sale_price, country) : ''
-  const origDisplay = selectedGame ? formatPriceByCountry(selectedGame.original_price, country) : ''
   const methods = country === 'VE' ? PAYMENT_VE : PAYMENT_CL
-
-  const mobileVariants = { hidden: { y: '100%' }, visible: { y: 0 }, exit: { y: '100%' } }
+  const mobileVariants  = { hidden: { y: '100%' }, visible: { y: 0 }, exit: { y: '100%' } }
   const desktopVariants = { hidden: { opacity: 0, scale: 0.95 }, visible: { opacity: 1, scale: 1 }, exit: { opacity: 0, scale: 0.95 } }
 
   const ModalContent = (
@@ -83,15 +140,18 @@ export function BuyModal() {
           <div className="text-right">
             <p className="font-sans text-[11px] line-through" style={{ color: 'var(--text-muted)' }}>{origDisplay}</p>
             <p className="font-display text-2xl leading-none" style={{ color: 'var(--gold)' }}>{saleDisplay}</p>
+            {discountApplied && (
+              <p className="font-sans text-[10px] font-bold" style={{ color: '#22C55E' }}>-{discountApplied}% CÓDIGO</p>
+            )}
           </div>
           <button onClick={handleClose} className="text-2xl leading-none" style={{ color: 'var(--text-muted)' }}>✕</button>
         </div>
       </div>
 
-      {/* Scrollable body */}
+      {/* Body scrollable */}
       <div className="overflow-y-auto flex-1 flex flex-col gap-3 p-4">
 
-        {/* ⚠️ LEER ANTES — blanco para contraste */}
+        {/* Leer antes */}
         <div className="rounded-xl p-4" style={{ backgroundColor: '#ffffff', border: '2px solid #F97316' }}>
           <p className="font-heading text-base mb-2" style={{ color: '#EA580C' }}>⚠️ Leer antes de comprar</p>
           <div className="flex flex-col gap-1 font-sans text-[13px]" style={{ color: '#374151' }}>
@@ -104,7 +164,7 @@ export function BuyModal() {
           </div>
         </div>
 
-        {/* 🎮 PASOS — fondo blanco */}
+        {/* Pasos */}
         <div className="rounded-xl p-4" style={{ backgroundColor: '#ffffff', border: '1px solid #e5e7eb' }}>
           <p className="font-heading text-base mb-3" style={{ color: '#1f2937' }}>🎮 Pasos del proceso</p>
           <div className="flex flex-col gap-2">
@@ -126,7 +186,7 @@ export function BuyModal() {
           </div>
         </div>
 
-        {/* Payment methods */}
+        {/* Métodos de pago */}
         <div className="rounded-xl border p-3" style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border)' }}>
           <p className="font-sans text-[11px] font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--text-muted)' }}>
             {country === 'CL' ? '🇨🇱' : '🇻🇪'} Métodos de pago
@@ -134,8 +194,7 @@ export function BuyModal() {
           </p>
           <div className="flex flex-wrap gap-1.5">
             {methods.map((m) => (
-              <div key={m.label}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border"
+              <div key={m.label} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border"
                 style={{
                   borderColor: m.highlight ? 'rgba(59,130,246,0.4)' : 'var(--border)',
                   backgroundColor: m.highlight ? 'rgba(59,130,246,0.08)' : 'var(--bg-modal)',
@@ -181,10 +240,42 @@ export function BuyModal() {
       {/* Footer sticky */}
       <div className="flex-shrink-0 border-t p-4 flex flex-col gap-3"
         style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+
+        {/* Código de descuento */}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Código de descuento (opcional)"
+            value={codeInput}
+            onChange={e => { setCodeInput(e.target.value.toUpperCase()); setCodeError(''); setCodeSuccess('') }}
+            className="input-dark flex-1"
+            style={{ fontSize: '13px', letterSpacing: '0.04em', textTransform: 'uppercase' }}
+            disabled={!!discountApplied}
+          />
+          <button
+            onClick={discountApplied
+              ? () => { setDiscountApplied(null); setCodeInput(''); setCodeSuccess('') }
+              : applyCode}
+            disabled={codeLoading || (!codeInput.trim() && !discountApplied)}
+            className="px-3 py-2 rounded-lg font-sans text-[12px] font-semibold transition-all active:scale-95 flex-shrink-0"
+            style={{
+              backgroundColor: discountApplied ? 'rgba(34,197,94,0.15)' : 'var(--bg-elevated)',
+              color: discountApplied ? '#22C55E' : 'var(--text-secondary)',
+              border: `1px solid ${discountApplied ? 'rgba(34,197,94,0.4)' : 'var(--border)'}`,
+              opacity: (codeLoading || (!codeInput.trim() && !discountApplied)) ? 0.5 : 1,
+            }}
+          >
+            {codeLoading ? '...' : discountApplied ? '✕ Quitar' : 'Aplicar'}
+          </button>
+        </div>
+        {codeError   && <p className="font-sans text-[12px] -mt-1" style={{ color: '#EF4444' }}>❌ {codeError}</p>}
+        {codeSuccess && <p className="font-sans text-[12px] -mt-1" style={{ color: '#22C55E' }}>{codeSuccess}</p>}
+
+        {/* Nombre */}
         <input type="text" placeholder="Coloca tu nombre para continuar..."
           value={buyerName} onChange={(e) => { setBuyerName(e.target.value); setNameError(false) }}
           className="input-dark" style={nameError ? { borderColor: '#EF4444' } : {}} />
-        {nameError && <p className="font-sans text-[12px]" style={{ color: '#EF4444' }}>Por favor ingresa tu nombre</p>}
+        {nameError && <p className="font-sans text-[12px] -mt-1" style={{ color: '#EF4444' }}>Por favor ingresa tu nombre</p>}
 
         <label className="flex items-start gap-2 cursor-pointer">
           <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)}
@@ -197,7 +288,6 @@ export function BuyModal() {
           </span>
         </label>
 
-        {/* GREEN WhatsApp button */}
         <button onClick={handleContinue} disabled={!termsAccepted}
           className="w-full font-heading text-lg py-3 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2"
           style={{

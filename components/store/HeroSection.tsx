@@ -1,8 +1,11 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { useStore } from '@/context/StoreContext'
 
 export function HeroSection() {
+  const { setTermsOpen } = useStore()
+
   return (
     <section
       className="relative overflow-hidden noise-overlay"
@@ -45,7 +48,7 @@ export function HeroSection() {
         }}
       />
 
-      {/* Contenido — centrado, con max-width para desktop */}
+      {/* Contenido */}
       <div className="relative z-10 flex flex-col items-center justify-center text-center px-4 py-12 md:py-16 lg:py-20 gap-4 max-w-4xl mx-auto">
 
         {/* Badge */}
@@ -89,6 +92,22 @@ export function HeroSection() {
             Como debería ser.
           </span>
         </motion.p>
+
+        {/* Botón T&C debajo del Hero */}
+        <motion.button
+          onClick={() => setTermsOpen(true)}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-full font-sans text-[12px] transition-all hover:opacity-80 active:scale-95"
+          style={{
+            backgroundColor: 'rgba(255,255,255,0.07)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            color: 'rgba(255,255,255,0.65)',
+          }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.4 }}
+        >
+          📋 Términos y Condiciones (leer)
+        </motion.button>
       </div>
     </section>
   )

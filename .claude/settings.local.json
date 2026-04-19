@@ -4,7 +4,11 @@
       "Bash(echo \"EXIT: $?\")",
       "Bash(npm install:*)",
       "Bash(npx tsc *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(Start-Sleep -Seconds 5)",
+      "Bash(Write-Host \"done\")",
+      "Bash(dir \"C:\\\\Users\\\\Ron Rull\\\\Documents\\\\Rinosteam catalogo\\\\public\")"
     ]
   }
 }

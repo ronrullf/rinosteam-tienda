@@ -6,10 +6,11 @@ import { createClient } from '@/lib/supabase/client'
 import { AdminHeader } from '@/components/admin/AdminHeader'
 import { GameListAdmin } from '@/components/admin/GameListAdmin'
 import { GameForm } from '@/components/admin/GameForm'
+import { DiscountCodeManager } from '@/components/admin/DiscountCodeManager'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import type { Game } from '@/types'
 
-type Tab = 'games' | 'add'
+type Tab = 'games' | 'add' | 'codes'
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -54,7 +55,8 @@ export default function AdminDashboard() {
 
   const TABS: { id: Tab; label: string }[] = [
     { id: 'games', label: `📋 Juegos (${games.length})` },
-    { id: 'add', label: '➕ Añadir juego' },
+    { id: 'add',   label: '➕ Añadir juego' },
+    { id: 'codes', label: '🎟 Códigos descuento' },
   ]
 
   return (
@@ -94,7 +96,7 @@ export default function AdminDashboard() {
           ) : (
             <GameListAdmin games={games} onRefresh={loadGames} />
           )
-        ) : (
+        ) : tab === 'add' ? (
           <div className="max-w-xl">
             <GameForm
               onSuccess={() => {
@@ -103,6 +105,8 @@ export default function AdminDashboard() {
               }}
             />
           </div>
+        ) : (
+          <DiscountCodeManager />
         )}
       </div>
     </div>

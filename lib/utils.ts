@@ -53,13 +53,37 @@ export function formatPriceCLP(usdPrice: number): string {
   return `$${clp.toLocaleString('es-CL')} CLP`
 }
 
+/** Convierte USD a Bolívares usando tasa paralelo + 50 Bs de margen */
+export function formatPriceBS(usdPrice: number, rate: number): string {
+  const bs = usdPrice * rate
+  return `${bs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs`
+}
+
 /** Devuelve precio formateado según país seleccionado */
 export function formatPriceByCountry(
   usdPrice: number,
-  country: 'CL' | 'VE' | null
+  country: 'CL' | 'VE' | null,
+  bsRate?: number | null
 ): string {
   if (country === 'CL') return formatPriceCLP(usdPrice)
+  if (country === 'VE' && bsRate) return formatPriceBS(usdPrice, bsRate)
   return formatPrice(usdPrice)
+}
+
+/**
+ * Precio completo para mensaje WA:
+ * VE → "$4.99 (3,345.84 Bs)"
+ * CL → "$4.99 ($4,499 CLP)"
+ */
+export function formatPriceFull(
+  usdPrice: number,
+  country: 'CL' | 'VE' | null,
+  bsRate?: number | null
+): string {
+  const usd = formatPrice(usdPrice)
+  if (country === 'CL') return `${usd} (${formatPriceCLP(usdPrice)})`
+  if (country === 'VE' && bsRate) return `${usd} (${formatPriceBS(usdPrice, bsRate)})`
+  return usd
 }
 
 /** Calcula porcentaje de descuento */

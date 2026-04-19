@@ -43,6 +43,16 @@ export interface CartItem {
   discounted: boolean   // 20% off via upsell
 }
 
+export interface DiscountCode {
+  id: string
+  code: string
+  discount_pct: number
+  duration_days: number
+  expires_at: string
+  is_active: boolean
+  created_at: string
+}
+
 export interface GameFormData {
   title: string
   description: string

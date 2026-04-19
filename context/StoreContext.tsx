@@ -29,6 +29,9 @@ interface StoreContextType {
   gamesList: Game[]
   setGamesList: (games: Game[]) => void
 
+  // Tasa Bs Venezuela (promedio API + 50)
+  bsRate: number | null
+
   // Cart
   cartItems: CartItem[]
   addToCart: (game: Game, discounted?: boolean) => void
@@ -55,7 +58,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [gamesList, setGamesList] = useState<Game[]>([])
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [isCartOpen, setCartOpen] = useState(false)
+  const [bsRate, setBsRate] = useState<number | null>(null)
 
+  // Fetch tasa paralelo Venezuela al iniciar (promedio + 50 Bs de margen)
+  useEffect(() => {
+    fetch('https://ve.dolarapi.com/v1/dolares/paralelo')
+      .then(r => r.json())
+      .then(data => {
+        if (typeof data.promedio === 'number') {
+          setBsRate(data.promedio + 50)
+        }
+      })
+      .catch(() => {}) // falla silenciosamente → muestra USD
+  }, [])
+
+  // Leer país guardado en localStorage
   useEffect(() => {
     const stored = localStorage.getItem('rinosteam_country') as CountryCode
     if (stored === 'CL' || stored === 'VE') {
@@ -97,6 +114,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       buyerName, setBuyerName,
       isTermsOpen, setTermsOpen,
       gamesList, setGamesList,
+      bsRate,
       cartItems, addToCart, removeFromCart, clearCart,
       isCartOpen, setCartOpen,
       isCountryModalOpen: isBuyModalOpen,
