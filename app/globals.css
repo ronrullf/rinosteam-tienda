@@ -1,0 +1,206 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Fondos */
+  --bg-base: #080402;
+  --bg-surface: #130A04;
+  --bg-elevated: #1F1008;
+  --bg-modal: #0D0703;
+
+  /* Naranja (brand color principal) */
+  --orange-500: #F97316;
+  --orange-600: #EA580C;
+  --orange-400: #FB923C;
+  --orange-glow: rgba(249, 115, 22, 0.25);
+
+  /* Dorado / Ámbar */
+  --gold: #F59E0B;
+  --gold-light: #FCD34D;
+
+  /* Texto */
+  --text-primary: #FFFFFF;
+  --text-secondary: #C9A882;
+  --text-muted: #7A5A3A;
+
+  /* Estados */
+  --success: #22C55E;
+  --danger: #EF4444;
+
+  /* Bordes */
+  --border: rgba(249, 115, 22, 0.2);
+  --border-strong: rgba(249, 115, 22, 0.5);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Scrollbar personalizado */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-base);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--orange-500);
+  border-radius: 4px;
+}
+
+/* Ocultar scrollbar horizontal en filtros */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Tipografía */
+.font-display {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.font-heading {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+}
+
+/* Animación pulse naranja para botones CTA */
+@keyframes pulse-orange {
+  0%, 100% {
+    box-shadow: 0 0 0 0 var(--orange-glow);
+  }
+  50% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+}
+
+.animate-pulse-orange {
+  animation: pulse-orange 3s ease-in-out infinite;
+}
+
+/* Shine para badges */
+@keyframes shine {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.animate-shine {
+  background: linear-gradient(
+    90deg,
+    var(--orange-500) 0%,
+    #ffb347 50%,
+    var(--orange-500) 100%
+  );
+  background-size: 200% auto;
+  animation: shine 2.5s linear infinite;
+}
+
+/* Feedback táctil en cards */
+.game-card {
+  transition: transform 100ms ease;
+}
+.game-card:active {
+  transform: scale(0.97);
+}
+
+/* Safe area para móviles */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+/* Momentum scrolling */
+.scroll-momentum {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Noise texture overlay */
+.noise-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  opacity: 0.04;
+}
+
+/* Partículas flotantes para HeroSection */
+@keyframes float-particle {
+  from {
+    transform: translateY(0px) scale(1);
+  }
+  to {
+    transform: translateY(-12px) scale(1.2);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Inputs admin */
+.input-dark {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 12px 14px;
+  width: 100%;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input-dark:focus {
+  border-color: var(--orange-500);
+}
+
+.input-dark::placeholder {
+  color: var(--text-muted);
+}
+
+/* Precio tachado */
+.price-original {
+  text-decoration: line-through;
+  color: var(--text-muted);
+  font-size: 13px;
+}
