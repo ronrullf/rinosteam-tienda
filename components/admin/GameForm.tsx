@@ -176,6 +176,22 @@ export function GameForm({ game, onSuccess }: GameFormProps) {
         >
           Imagen del juego *
         </label>
+
+        {/* Opción A: Pegar URL directa */}
+        <div className="mb-3">
+          <input
+            type="url"
+            placeholder="https://... (pega una URL de imagen directamente)"
+            value={form.image_url}
+            onChange={(e) => set('image_url', e.target.value)}
+            className="input-dark"
+          />
+          <p className="font-sans text-[11px] mt-1" style={{ color: 'var(--text-muted)' }}>
+            Pega una URL de imagen — o sube un archivo abajo ↓
+          </p>
+        </div>
+
+        {/* Opción B: Subir archivo a Storage */}
         <ImageUploader
           value={form.image_url}
           onChange={(url) => set('image_url', url)}
