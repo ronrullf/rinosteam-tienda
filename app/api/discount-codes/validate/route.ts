@@ -1,5 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { redis } from '@/lib/redis'
+import type { DiscountCodeData } from '@/lib/redis'
 
 /** POST /api/discount-codes/validate — valida un código de descuento */
 export async function POST(req: Request) {
@@ -9,36 +10,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ valid: false, message: 'Código inválido' })
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const trimmed = String(code).trim().toUpperCase()
+  const key = `discount:${trimmed}`
 
-  const { data } = await supabase
-    .from('discount_codes')
-    .select('*')
-    .eq('code', String(code).trim().toUpperCase())
-    .single()
+  const data = await redis.hgetall<DiscountCodeData>(key)
 
-  // No existe
   if (!data) {
     return NextResponse.json({ valid: false, message: 'Código inválido o no existe' })
   }
 
-  // Expirado por tiempo o desactivado manualmente
   const isExpiredByTime   = new Date(data.expires_at) < new Date()
   const isExpiredByStatus = data.status === 'expired'
 
   if (isExpiredByTime || isExpiredByStatus) {
-    // Si expiró por tiempo pero no está marcado, actualizamos el status
     if (isExpiredByTime && !isExpiredByStatus) {
-      await supabase
-        .from('discount_codes')
-        .update({ status: 'expired' })
-        .eq('id', data.id)
+      await redis.hset(key, { status: 'expired' })
     }
     return NextResponse.json({ valid: false, message: 'Este código ha expirado' })
   }
 
-  return NextResponse.json({ valid: true, discount_pct: data.discount_pct })
+  return NextResponse.json({ valid: true, discount_pct: Number(data.discount_pct) })
 }

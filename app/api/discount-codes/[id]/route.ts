@@ -1,39 +1,27 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-
-function adminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-}
+import { redis } from '@/lib/redis'
 
 /** PATCH /api/discount-codes/[id] — desactiva un código (valid → expired) */
 export async function PATCH(
   _req: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = adminClient()
-  const { error } = await supabase
-    .from('discount_codes')
-    .update({ status: 'expired' })
-    .eq('id', params.id)
+  // El id que llega es el código (ej: "RINO-ABCDEF")
+  const key = `discount:${params.id}`
+  const exists = await redis.exists(key)
+  if (!exists) return NextResponse.json({ error: 'Código no encontrado' }, { status: 404 })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+  await redis.hset(key, { status: 'expired' })
   return NextResponse.json({ success: true })
 }
 
-/** DELETE /api/discount-codes/[id] — elimina el código de la BD */
+/** DELETE /api/discount-codes/[id] — elimina el código */
 export async function DELETE(
   _req: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = adminClient()
-  const { error } = await supabase
-    .from('discount_codes')
-    .delete()
-    .eq('id', params.id)
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+  const key = `discount:${params.id}`
+  await redis.del(key)
+  await redis.srem('discount_codes_index', key)
   return NextResponse.json({ success: true })
 }

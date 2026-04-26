@@ -1,64 +1,62 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-
-function adminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-}
+import { redis } from '@/lib/redis'
+import type { DiscountCodeData } from '@/lib/redis'
 
 /** GET /api/discount-codes — lista todos los códigos */
 export async function GET() {
-  const supabase = adminClient()
+  const keys = await redis.smembers('discount_codes_index')
 
-  // Auto-expirar códigos que se pasaron de tiempo
-  await supabase
-    .from('discount_codes')
-    .update({ status: 'expired' })
-    .eq('status', 'valid')
-    .lt('expires_at', new Date().toISOString())
+  if (!keys || keys.length === 0) return NextResponse.json([])
 
-  const { data, error } = await supabase
-    .from('discount_codes')
-    .select('*')
-    .order('created_at', { ascending: false })
+  const codes: DiscountCodeData[] = []
+  for (const key of keys) {
+    const data = await redis.hgetall<DiscountCodeData>(key)
+    if (data) {
+      // Auto-expirar si se pasó el tiempo
+      if (data.status === 'valid' && new Date(data.expires_at) < new Date()) {
+        await redis.hset(key, { status: 'expired' })
+        data.status = 'expired'
+      }
+      codes.push(data)
+    }
+  }
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data ?? [])
+  codes.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  return NextResponse.json(codes)
 }
 
 /** POST /api/discount-codes — crea un nuevo código */
 export async function POST(req: Request) {
-  const body = await req.json()
-  const { code, discount_pct, duration_days } = body
+  const { code, discount_pct, duration_days } = await req.json()
 
   if (!code || !discount_pct || !duration_days) {
     return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
   }
 
+  const trimmed = String(code).trim().toUpperCase()
+  const key = `discount:${trimmed}`
+
+  // Verificar si ya existe
+  const existing = await redis.exists(key)
+  if (existing) {
+    return NextResponse.json({ error: 'Ya existe un código con ese nombre' }, { status: 400 })
+  }
+
   const expires_at = new Date()
   expires_at.setDate(expires_at.getDate() + Number(duration_days))
 
-  const supabase = adminClient()
-  const { data, error } = await supabase
-    .from('discount_codes')
-    .insert({
-      code: String(code).trim().toUpperCase(),
-      discount_pct: Number(discount_pct),
-      duration_days: Number(duration_days),
-      expires_at: expires_at.toISOString(),
-      status: 'valid',
-    })
-    .select()
-    .single()
-
-  if (error) {
-    const msg = error.message.includes('unique')
-      ? 'Ya existe un código con ese nombre'
-      : error.message
-    return NextResponse.json({ error: msg }, { status: 400 })
+  const newCode: DiscountCodeData = {
+    id: crypto.randomUUID(),
+    code: trimmed,
+    discount_pct: Number(discount_pct),
+    duration_days: Number(duration_days),
+    expires_at: expires_at.toISOString(),
+    status: 'valid',
+    created_at: new Date().toISOString(),
   }
 
-  return NextResponse.json(data)
+  await redis.hset(key, newCode)
+  await redis.sadd('discount_codes_index', key)
+
+  return NextResponse.json(newCode)
 }

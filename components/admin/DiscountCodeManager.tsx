@@ -94,7 +94,7 @@ export function DiscountCodeManager() {
   async function handleDeactivate(id: string, codeStr: string) {
     if (!confirm(`¿Desactivar el código "${codeStr}"? No podrá usarse más.`)) return
     setActionId(id)
-    await fetch(`/api/discount-codes/${id}`, { method: 'PATCH' })
+    await fetch(`/api/discount-codes/${codeStr}`, { method: 'PATCH' })
     setActionId(null)
     loadCodes()
   }
@@ -102,7 +102,7 @@ export function DiscountCodeManager() {
   async function handleDelete(id: string, codeStr: string) {
     if (!confirm(`¿Eliminar permanentemente "${codeStr}"?`)) return
     setActionId(id)
-    await fetch(`/api/discount-codes/${id}`, { method: 'DELETE' })
+    await fetch(`/api/discount-codes/${codeStr}`, { method: 'DELETE' })
     setActionId(null)
     loadCodes()
   }
