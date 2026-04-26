@@ -27,9 +27,9 @@ export async function GET() {
 
 /** POST /api/discount-codes — crea un nuevo código */
 export async function POST(req: Request) {
-  const { code, discount_pct, duration_days } = await req.json()
+  const { code, discount_pct, duration_hours } = await req.json()
 
-  if (!code || !discount_pct || !duration_days) {
+  if (!code || !discount_pct || !duration_hours) {
     return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
   }
 
@@ -43,13 +43,13 @@ export async function POST(req: Request) {
   }
 
   const expires_at = new Date()
-  expires_at.setDate(expires_at.getDate() + Number(duration_days))
+  expires_at.setTime(expires_at.getTime() + Number(duration_hours) * 60 * 60 * 1000)
 
   const newCode: DiscountCodeData = {
     id: crypto.randomUUID(),
     code: trimmed,
     discount_pct: Number(discount_pct),
-    duration_days: Number(duration_days),
+    duration_hours: Number(duration_hours),
     expires_at: expires_at.toISOString(),
     status: 'valid',
     created_at: new Date().toISOString(),
