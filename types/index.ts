@@ -49,7 +49,7 @@ export interface DiscountCode {
   discount_pct: number
   duration_days: number
   expires_at: string
-  is_active: boolean
+  status: 'valid' | 'expired'
   created_at: string
 }
 

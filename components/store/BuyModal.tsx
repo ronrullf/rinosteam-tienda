@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useStore } from '@/context/StoreContext'
 import { buildWhatsAppUrl, formatPrice, formatPriceCLP, formatPriceBS, formatPriceFull } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/client'
 import type { Country } from '@/types'
 
 const REVIEWS = [
@@ -70,22 +69,19 @@ export function BuyModal() {
     setCodeError('')
     setCodeSuccess('')
     try {
-      const supabase = createClient()
-      const { data } = await supabase
-        .from('discount_codes')
-        .select('*')
-        .eq('code', raw)
-        .single()
+      const res  = await fetch('/api/discount-codes/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: raw }),
+      })
+      const data = await res.json()
 
-      if (!data) {
-        setCodeError('Código no válido')
-        setDiscountApplied(null)
-      } else if (new Date(data.expires_at) < new Date()) {
-        setCodeError('Este código ha expirado')
-        setDiscountApplied(null)
-      } else {
+      if (data.valid) {
         setDiscountApplied(data.discount_pct)
         setCodeSuccess(`✅ -${data.discount_pct}% aplicado correctamente`)
+      } else {
+        setCodeError(data.message ?? 'Código inválido')
+        setDiscountApplied(null)
       }
     } catch {
       setCodeError('Error al verificar el código')

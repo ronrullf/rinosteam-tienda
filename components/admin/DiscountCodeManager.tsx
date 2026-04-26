@@ -1,8 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import type { DiscountCode } from '@/types'
 
 const DURATION_OPTIONS = [1, 3, 5, 7]
 
@@ -20,15 +18,32 @@ function formatExpiry(dateStr: string): string {
   })
 }
 
-function isExpired(dateStr: string): boolean {
-  return new Date(dateStr) < new Date()
+function timeLeft(dateStr: string): string {
+  const diff = new Date(dateStr).getTime() - Date.now()
+  if (diff <= 0) return 'Expirado'
+  const days  = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+  const mins  = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  if (days > 0)  return `${days}d ${hours}h restantes`
+  if (hours > 0) return `${hours}h ${mins}m restantes`
+  return `${mins}m restantes`
+}
+
+interface DiscountCode {
+  id: string
+  code: string
+  discount_pct: number
+  duration_days: number
+  expires_at: string
+  status: 'valid' | 'expired'
+  created_at: string
 }
 
 export function DiscountCodeManager() {
   const [codes, setCodes] = useState<DiscountCode[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
-  const [deleting, setDeleting] = useState<string | null>(null)
+  const [actionId, setActionId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
@@ -38,13 +53,15 @@ export function DiscountCodeManager() {
 
   const loadCodes = useCallback(async () => {
     setLoading(true)
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('discount_codes')
-      .select('*')
-      .order('created_at', { ascending: false })
-    setCodes(data ?? [])
-    setLoading(false)
+    try {
+      const res  = await fetch('/api/discount-codes')
+      const data = await res.json()
+      setCodes(Array.isArray(data) ? data : [])
+    } catch {
+      setCodes([])
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => { loadCodes() }, [loadCodes])
@@ -56,45 +73,47 @@ export function DiscountCodeManager() {
     setError('')
     setSuccess('')
 
-    const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + durationDays)
-
-    const supabase = createClient()
-    const { error: err } = await supabase.from('discount_codes').insert({
-      code: trimmed,
-      discount_pct: discountPct,
-      duration_days: durationDays,
-      expires_at: expiresAt.toISOString(),
-      is_active: true,
+    const res  = await fetch('/api/discount-codes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: trimmed, discount_pct: discountPct, duration_days: durationDays }),
     })
-
+    const data = await res.json()
     setCreating(false)
-    if (err) {
-      setError(err.message.includes('unique') ? 'Ya existe un código con ese nombre' : err.message)
+
+    if (!res.ok) {
+      setError(data.error ?? 'Error al crear el código')
     } else {
-      setSuccess(`✅ Código "${trimmed}" creado — expira en ${durationDays} día(s)`)
+      setSuccess(`✅ Código "${trimmed}" creado — válido por ${durationDays} día(s)`)
       setCode(randomCode())
       loadCodes()
       setTimeout(() => setSuccess(''), 5000)
     }
   }
 
-  async function handleDelete(id: string, codeStr: string) {
-    if (!confirm(`¿Eliminar el código "${codeStr}"?`)) return
-    setDeleting(id)
-    const supabase = createClient()
-    await supabase.from('discount_codes').delete().eq('id', id)
-    setDeleting(null)
+  async function handleDeactivate(id: string, codeStr: string) {
+    if (!confirm(`¿Desactivar el código "${codeStr}"? No podrá usarse más.`)) return
+    setActionId(id)
+    await fetch(`/api/discount-codes/${id}`, { method: 'PATCH' })
+    setActionId(null)
     loadCodes()
   }
 
-  const activeCodes  = codes.filter(c => !isExpired(c.expires_at))
-  const expiredCodes = codes.filter(c => isExpired(c.expires_at))
+  async function handleDelete(id: string, codeStr: string) {
+    if (!confirm(`¿Eliminar permanentemente "${codeStr}"?`)) return
+    setActionId(id)
+    await fetch(`/api/discount-codes/${id}`, { method: 'DELETE' })
+    setActionId(null)
+    loadCodes()
+  }
+
+  const activeCodes  = codes.filter(c => c.status === 'valid' && new Date(c.expires_at) > new Date())
+  const expiredCodes = codes.filter(c => c.status === 'expired' || new Date(c.expires_at) <= new Date())
 
   return (
     <div className="flex flex-col gap-8 max-w-2xl">
 
-      {/* Formulario crear código */}
+      {/* Formulario crear */}
       <div className="rounded-xl border p-5"
         style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border)' }}>
         <h3 className="font-heading text-xl mb-5" style={{ color: 'var(--text-primary)' }}>
@@ -114,7 +133,7 @@ export function DiscountCodeManager() {
                 value={code}
                 onChange={e => setCode(e.target.value.toUpperCase())}
                 className="input-dark flex-1 font-mono tracking-widest"
-                style={{ fontSize: '14px', textTransform: 'uppercase' }}
+                style={{ fontSize: '14px' }}
                 placeholder="RINO-XXXXXX"
               />
               <button
@@ -122,23 +141,18 @@ export function DiscountCodeManager() {
                 className="px-3 py-2 rounded-lg transition-all hover:opacity-80 text-lg"
                 style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}
                 title="Generar código aleatorio"
-              >
-                🎲
-              </button>
+              >🎲</button>
             </div>
           </div>
 
           {/* Descuento % */}
           <div>
             <label className="font-sans text-[11px] uppercase tracking-wide mb-1.5 block" style={{ color: 'var(--text-muted)' }}>
-              Descuento: <span className="font-heading text-xl" style={{ color: 'var(--orange-400)' }}>{discountPct}%</span>
+              Descuento:{' '}
+              <span className="font-heading text-xl" style={{ color: 'var(--orange-400)' }}>{discountPct}%</span>
             </label>
             <input
-              type="range"
-              min={5}
-              max={50}
-              step={5}
-              value={discountPct}
+              type="range" min={5} max={50} step={5} value={discountPct}
               onChange={e => setDiscountPct(Number(e.target.value))}
               className="w-full accent-orange-500"
             />
@@ -207,22 +221,25 @@ export function DiscountCodeManager() {
                       style={{ backgroundColor: 'rgba(34,197,94,0.15)', color: '#22C55E' }}>
                       -{c.discount_pct}%
                     </span>
-                    <span className="px-2 py-0.5 rounded-full font-sans text-[11px]"
-                      style={{ backgroundColor: 'rgba(249,115,22,0.1)', color: 'var(--orange-400)' }}>
-                      {c.duration_days}d
+                    <span className="px-2 py-0.5 rounded-full font-sans text-[10px] font-bold"
+                      style={{ backgroundColor: 'rgba(34,197,94,0.1)', color: '#22C55E', border: '1px solid rgba(34,197,94,0.3)' }}>
+                      VÁLIDO
                     </span>
                   </div>
-                  <p className="font-sans text-[11px] mt-1" style={{ color: 'var(--text-muted)' }}>
-                    ⏳ Expira: {formatExpiry(c.expires_at)}
+                  <p className="font-sans text-[12px] mt-1 font-semibold" style={{ color: '#22C55E' }}>
+                    ⏳ {timeLeft(c.expires_at)}
+                  </p>
+                  <p className="font-sans text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                    Expira: {formatExpiry(c.expires_at)}
                   </p>
                 </div>
                 <button
-                  onClick={() => handleDelete(c.id, c.code)}
-                  disabled={deleting === c.id}
+                  onClick={() => handleDeactivate(c.id, c.code)}
+                  disabled={actionId === c.id}
                   className="px-3 py-2 rounded-lg font-sans text-[12px] font-semibold transition-all hover:opacity-80 flex-shrink-0"
                   style={{ backgroundColor: 'rgba(239,68,68,0.1)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.25)' }}
                 >
-                  {deleting === c.id ? '...' : '🗑 Eliminar'}
+                  {actionId === c.id ? '...' : '⛔ Desactivar'}
                 </button>
               </div>
             ))}
@@ -231,34 +248,41 @@ export function DiscountCodeManager() {
       </div>
 
       {/* Códigos expirados */}
-      {expiredCodes.length > 0 && (
+      {!loading && expiredCodes.length > 0 && (
         <div>
           <h3 className="font-heading text-base mb-3" style={{ color: 'var(--text-muted)' }}>
-            🔴 Expirados ({expiredCodes.length})
+            🔴 Expirados / Desactivados ({expiredCodes.length})
           </h3>
           <div className="flex flex-col gap-2">
-            {expiredCodes.slice(0, 8).map(c => (
-              <div key={c.id} className="flex items-center gap-3 rounded-xl border p-3 opacity-50"
+            {expiredCodes.slice(0, 10).map(c => (
+              <div key={c.id} className="flex items-center gap-3 rounded-xl border p-3 opacity-60"
                 style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border)' }}>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-mono text-[13px] line-through tracking-widest" style={{ color: 'var(--text-muted)' }}>
                       {c.code}
                     </span>
                     <span className="font-sans text-[11px]" style={{ color: 'var(--text-muted)' }}>
                       -{c.discount_pct}%
                     </span>
+                    <span className="px-1.5 py-0.5 rounded font-sans text-[10px] font-bold"
+                      style={{ backgroundColor: 'rgba(239,68,68,0.1)', color: '#EF4444' }}>
+                      {c.status === 'expired' && new Date(c.expires_at) > new Date() ? 'DESACTIVADO' : 'EXPIRADO'}
+                    </span>
                   </div>
-                  <p className="font-sans text-[10px]" style={{ color: 'var(--text-muted)' }}>
-                    Expiró: {formatExpiry(c.expires_at)}
+                  <p className="font-sans text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                    {c.status === 'expired' && new Date(c.expires_at) > new Date()
+                      ? `Desactivado manualmente`
+                      : `Expiró: ${formatExpiry(c.expires_at)}`}
                   </p>
                 </div>
                 <button
                   onClick={() => handleDelete(c.id, c.code)}
-                  className="px-2 py-1 rounded font-sans text-[11px] hover:opacity-80"
-                  style={{ color: 'var(--text-muted)' }}
+                  disabled={actionId === c.id}
+                  className="px-2 py-1 rounded font-sans text-[11px] hover:opacity-80 flex-shrink-0"
+                  style={{ color: '#EF4444' }}
                 >
-                  🗑
+                  {actionId === c.id ? '...' : '🗑 Eliminar'}
                 </button>
               </div>
             ))}
