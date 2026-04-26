@@ -3,11 +3,11 @@
 -- Ejecutar en Supabase → SQL Editor
 -- =============================================
 
--- 1. Limpiar versiones anteriores (cualquier nombre)
+-- 1. Limpiar versiones anteriores
 DROP TABLE IF EXISTS "public.discount_codes" CASCADE;
 DROP TABLE IF EXISTS discount_codes CASCADE;
 
--- 2. Crear la tabla correcta
+-- 2. Crear la tabla
 CREATE TABLE discount_codes (
   id            UUID         DEFAULT gen_random_uuid() PRIMARY KEY,
   code          TEXT         UNIQUE NOT NULL,
@@ -18,16 +18,14 @@ CREATE TABLE discount_codes (
   created_at    TIMESTAMPTZ  DEFAULT NOW()
 );
 
--- 3. Habilitar Row Level Security
+-- 3. Habilitar RLS
 ALTER TABLE discount_codes ENABLE ROW LEVEL SECURITY;
 
--- 4. Política: cualquiera puede leer (para validar cupones en el front)
-CREATE POLICY "public_read"
-  ON discount_codes FOR SELECT
-  USING (true);
-
--- Nota: INSERT / UPDATE / DELETE se hacen desde el servidor (service role key),
--- por lo que NO necesitan políticas RLS adicionales.
+-- 4. Política única: acceso total (la protección está en la página admin con auth)
+CREATE POLICY "full_access"
+  ON discount_codes FOR ALL
+  USING (true)
+  WITH CHECK (true);
 
 -- 5. Recargar cache de PostgREST
 NOTIFY pgrst, 'reload schema';
